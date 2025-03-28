@@ -8,12 +8,17 @@ export interface RoomData {
   username?: string;
   users: string[];
   lock: boolean;
+  save?: () => Promise<RoomData | null>;
 }
 
 // Room model with methods to interact with Supabase
 const Room = {
-  async findOne(query: { roomId?: string }): Promise<RoomData & { save: () => Promise<RoomData | null> } | null> {
+  async findOne(query: { roomId?: string }): Promise<RoomData | null> {
     try {
+      if (!query.roomId) {
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('rooms')
         .select('*')
@@ -28,7 +33,7 @@ const Room = {
       if (!data) return null;
       
       // Add a save method to the returned data to mimic MongoDB behavior
-      const roomWithSave = {
+      const roomWithSave: RoomData = {
         ...data,
         save: async function() {
           const { data: updatedData, error: updateError } = await supabase

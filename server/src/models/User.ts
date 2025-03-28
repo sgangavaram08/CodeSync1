@@ -14,8 +14,6 @@ const User = {
     if (query.$or) {
       // This emulates MongoDB's $or functionality
       for (const condition of query.$or) {
-        let supabaseQuery = supabase.from('users').select('*');
-        
         if (condition.username) {
           const { data, error } = await supabase
             .from('users')

@@ -3,13 +3,13 @@ import dotenv from "dotenv";
 import http from "http";
 import cors from "cors";
 import { SocketEvent, SocketId } from "./types/socket";
-import { USER_CONNECTION_STATUS, User } from "./types/user";
+import { USER_CONNECTION_STATUS, User as UserType } from "./types/user";
 import { Server } from "socket.io";
 import path from "path";
 import bcrypt from "bcryptjs";
 import User from "./models/User";
 import { connectDB } from "./config/db";
-import Room from "./models/Room";
+import Room, { RoomData } from "./models/Room";
 
 dotenv.config();
 
@@ -35,7 +35,7 @@ app.post("/register", async (req: RegisterRequest, res: Response) => {
 
     if (
       existingUser?.username == username ||
-      existingUser?.password == password
+      existingUser?.mobile == mobile
     ) {
       return res
         .status(400)
@@ -103,7 +103,7 @@ app.post("/create-or-update-room", async (req, res) => {
         existingRoom.users = [];
       }
       existingRoom.users.push(username);
-      await existingRoom.save();
+      await existingRoom.save?.();
       res.json({
         message: "User added to room successfully",
         data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
@@ -117,7 +117,7 @@ app.post("/create-or-update-room", async (req, res) => {
         lock: false
       };
       
-      await Room.save(roomData);
+      const newRoom = await Room.save(roomData);
       
       res.json({
         message: "Room created successfully",
@@ -411,6 +411,7 @@ app.get("/", (req: Request, res: Response) => {
   // Send the index.html file
   res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
+
 interface RegisterRequest extends Request {
   body: {
     username: string;

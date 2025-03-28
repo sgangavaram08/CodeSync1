@@ -1,0 +1,37 @@
+#animatedButton {
+    background-color: #ff9900; /* Orange background */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    animation: shadowPulse 1.5s infinite;
+  }
+  
+  @keyframes shadowPulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 165, 0, 0.5); /* Orange color */
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+    }
+  }
+  
+
+  #animatedButtonn {
+    background-color: #00ffaa; /* Orange background */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    animation: shadowPulsee 1.5s infinite;
+  }
+  
+  @keyframes shadowPulsee {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(0, 255, 128, 0.5); /* Orange color */
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(0, 255, 191, 0.5);
+    }
+  }
+  

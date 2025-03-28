@@ -9,7 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export const connectDB = async (): Promise<void> => {
   try {
     // Test the connection by making a simple query
-    const { data, error } = await supabase.from('rooms').select('count');
+    const { data, error } = await supabase.from('users').select('count');
     
     if (error) throw error;
     

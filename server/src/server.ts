@@ -1,3 +1,4 @@
+
 import express, { Response, Request } from "express";
 import dotenv from "dotenv";
 import http from "http";
@@ -31,11 +32,11 @@ app.post("/register", async (req: RegisterRequest, res: Response) => {
       $or: [{ username }, { mobile }],
     });
 
-    console.log(existingUser?.username);
+    console.log("Existing user check:", existingUser);
 
     if (
-      existingUser?.username == username ||
-      existingUser?.mobile == mobile
+      existingUser?.username === username ||
+      existingUser?.mobile === mobile
     ) {
       return res
         .status(400)
@@ -51,13 +52,14 @@ app.post("/register", async (req: RegisterRequest, res: Response) => {
         password: hashedPassword,
       };
       
-      await User.save(newUser);
+      const savedUser = await User.save(newUser);
+      console.log("User saved:", savedUser);
 
       return res.status(201).json({ message: "User registered successfully" });
     }
     // Save user to database
   } catch (error) {
-    console.error(error);
+    console.error("Registration error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -79,6 +81,7 @@ app.post("/login", async (req: Request, res: Response) => {
 
     res.status(200).json({ message: "Login successful" });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -86,7 +89,7 @@ app.post("/login", async (req: Request, res: Response) => {
 app.post("/create-or-update-room", async (req, res) => {
   try {
     const { roomId, username } = req.body;
-    console.log(roomId, username);
+    console.log("Create/update room request:", roomId, username);
     // Check if room already exists
     const existingRoom = await Room.findOne({ roomId });
     if (existingRoom) {
@@ -103,7 +106,7 @@ app.post("/create-or-update-room", async (req, res) => {
         existingRoom.users = [];
       }
       existingRoom.users.push(username);
-      await existingRoom.save?.();
+      await existingRoom.save();
       res.json({
         message: "User added to room successfully",
         data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
@@ -125,7 +128,7 @@ app.post("/create-or-update-room", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Create/update room error:", error);
     res.status(500).json({ message: "Failed to create or update room" });
   }
 });
@@ -134,11 +137,11 @@ app.post("/create-or-update-room", async (req, res) => {
 app.post("/set-lock", async (req, res) => {
   try {
     const { roomId, lock } = req.body;
-    console.log(roomId, lock, "------");
+    console.log("Set lock request:", roomId, lock);
     // Find the room and update the lock value
     const room = await Room.findOneAndUpdate(
       { roomId },
-      { lock: lock }, // Always set lock to true regardless of the request
+      { lock }, 
       { new: true }
     );
 
@@ -148,7 +151,7 @@ app.post("/set-lock", async (req, res) => {
 
     res.json({ message: "Lock updated successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Set lock error:", error);
     res.status(500).json({ message: "Failed to update lock" });
   }
 });
@@ -157,6 +160,7 @@ app.post("/set-lock", async (req, res) => {
 app.get('/lock', async (req, res) => {
   try {
     const roomId = req.query.roomId as string;
+    console.log("Get lock request for roomId:", roomId);
 
     // Use roomId to fetch the lock value
     const room = await Room.findOne({ roomId });
@@ -166,7 +170,7 @@ app.get('/lock', async (req, res) => {
 
     res.json({ lock: room.lock, admin: room.username });
   } catch (error) {
-    console.error(error);
+    console.error("Get lock error:", error);
     res.status(500).json({ message: 'Failed to get lock value' });
   }
 });
@@ -421,5 +425,5 @@ interface RegisterRequest extends Request {
 }
 
 server.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });

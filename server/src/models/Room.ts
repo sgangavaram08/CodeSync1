@@ -8,12 +8,11 @@ export interface RoomData {
   username?: string;
   users: string[];
   lock: boolean;
-  save?: () => Promise<RoomData | null>;
 }
 
 // Room model with methods to interact with Supabase
 const Room = {
-  async findOne(query: { roomId?: string }): Promise<RoomData | null> {
+  async findOne(query: { roomId?: string }): Promise<RoomData & { save: () => Promise<RoomData | null> } | null> {
     try {
       if (!query.roomId) {
         return null;
@@ -33,7 +32,7 @@ const Room = {
       if (!data) return null;
       
       // Add a save method to the returned data to mimic MongoDB behavior
-      const roomWithSave: RoomData = {
+      const roomWithSave = {
         ...data,
         save: async function() {
           const { data: updatedData, error: updateError } = await supabase
@@ -67,19 +66,24 @@ const Room = {
     update: { lock: boolean },
     options?: { new: boolean }
   ): Promise<RoomData | null> {
-    const { data, error } = await supabase
-      .from('rooms')
-      .update({ lock: update.lock })
-      .eq('room_id', query.roomId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating room:', error);
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .update({ lock: update.lock })
+        .eq('room_id', query.roomId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating room:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in findOneAndUpdate:', error);
       return null;
     }
-    
-    return data;
   },
   
   async save(roomData: { 
@@ -88,23 +92,28 @@ const Room = {
     users: string[];
     lock?: boolean;
   }): Promise<RoomData | null> {
-    const { data, error } = await supabase
-      .from('rooms')
-      .insert({
-        room_id: roomData.roomId,
-        username: roomData.username,
-        users: roomData.users,
-        lock: roomData.lock || false
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error saving room:', error);
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .insert({
+          room_id: roomData.roomId,
+          username: roomData.username,
+          users: roomData.users,
+          lock: roomData.lock || false
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error saving room:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in save:', error);
       return null;
     }
-    
-    return data;
   }
 };
 

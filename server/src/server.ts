@@ -7,8 +7,8 @@ import { USER_CONNECTION_STATUS, User } from "./types/user";
 import { Server } from "socket.io";
 import path from "path";
 import bcrypt from "bcryptjs";
-import Userr from "./models/User";
-import connectDB from "./config/db";
+import User from "./models/User";
+import { connectDB } from "./config/db";
 import Room from "./models/Room";
 
 dotenv.config();
@@ -27,7 +27,7 @@ app.post("/register", async (req: RegisterRequest, res: Response) => {
     const { username, mobile, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await Userr.findOne({
+    const existingUser = await User.findOne({
       $or: [{ username }, { mobile }],
     });
 
@@ -45,12 +45,13 @@ app.post("/register", async (req: RegisterRequest, res: Response) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create new user
-      const newUser = new Userr({
+      const newUser = {
         username,
         mobile,
         password: hashedPassword,
-      });
-      await newUser.save();
+      };
+      
+      await User.save(newUser);
 
       return res.status(201).json({ message: "User registered successfully" });
     }
@@ -66,7 +67,7 @@ app.post("/login", async (req: Request, res: Response) => {
 
   try {
     // Check if the username exists
-    const user = await Userr.findOne({ username });
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(400).json({ message: "Username not found" });
     }
@@ -93,7 +94,7 @@ app.post("/create-or-update-room", async (req, res) => {
       if (existingRoom.users && existingRoom.users.includes(username)) {
         return res.json({
           message: "User already in users list",
-          data: { user: username, roomId: roomId, type: "user",lock:existingRoom.lock },
+          data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
         });
       }
 
@@ -105,19 +106,22 @@ app.post("/create-or-update-room", async (req, res) => {
       await existingRoom.save();
       res.json({
         message: "User added to room successfully",
-        data: { user: username, roomId: roomId, type: "user",lock:existingRoom.lock  },
+        data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
       });
     } else {
       // If room does not exist, create a new room with the provided username in both username field and users array
-      const newRoom = new Room({
+      const roomData = {
         roomId,
         username,
         users: [username],
-      });
-      await newRoom.save();
+        lock: false
+      };
+      
+      await Room.save(roomData);
+      
       res.json({
         message: "Room created successfully",
-        data: { user: username, roomId: roomId, type: "admin",lock:false  },
+        data: { user: username, roomId: roomId, type: "admin", lock: false },
       });
     }
   } catch (error) {
@@ -130,7 +134,7 @@ app.post("/create-or-update-room", async (req, res) => {
 app.post("/set-lock", async (req, res) => {
   try {
     const { roomId, lock } = req.body;
-    console.log(roomId,lock ,"------")
+    console.log(roomId, lock, "------");
     // Find the room and update the lock value
     const room = await Room.findOneAndUpdate(
       { roomId },
@@ -149,11 +153,10 @@ app.post("/set-lock", async (req, res) => {
   }
 });
 
-
 //get lock value 
 app.get('/lock', async (req, res) => {
   try {
-    const { roomId } = req.query;
+    const roomId = req.query.roomId as string;
 
     // Use roomId to fetch the lock value
     const room = await Room.findOne({ roomId });
@@ -161,16 +164,12 @@ app.get('/lock', async (req, res) => {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-    res.json({ lock: room.lock,admin:room.username });
+    res.json({ lock: room.lock, admin: room.username });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to get lock value' });
   }
 });
-
-
-
-
 
 const server = http.createServer(app);
 const io = new Server(server, {

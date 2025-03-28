@@ -1,12 +1,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://ankngizkajsebhlllsrl.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFua25naXprYWpzZWJobGxsc3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMxNTY5NDUsImV4cCI6MjA1ODczMjk0NX0.DU93wU7JW0XDm23E7syZfNDUPH2TykVVE9wBZliu7do';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
-const connectDB = async (): Promise<void> => {
+export const connectDB = async (): Promise<void> => {
   try {
     // Test the connection by making a simple query
     const { data, error } = await supabase.from('rooms').select('count');
@@ -19,5 +19,3 @@ const connectDB = async (): Promise<void> => {
     process.exit(1); // Exit process with failure
   }
 };
-
-export { supabase, connectDB };

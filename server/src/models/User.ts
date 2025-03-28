@@ -9,7 +9,39 @@ export interface IUser {
 }
 
 const User = {
-  async findOne(query: { username?: string; mobile?: string }): Promise<IUser | null> {
+  async findOne(query: { username?: string; mobile?: string; $or?: Array<{username?: string; mobile?: string}> }): Promise<IUser | null> {
+    // Handle MongoDB-style $or queries
+    if (query.$or) {
+      // This emulates MongoDB's $or functionality
+      for (const condition of query.$or) {
+        let supabaseQuery = supabase.from('users').select('*');
+        
+        if (condition.username) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('username', condition.username)
+            .single();
+          
+          if (!error && data) {
+            return data;
+          }
+        } else if (condition.mobile) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('mobile', condition.mobile)
+            .single();
+          
+          if (!error && data) {
+            return data;
+          }
+        }
+      }
+      return null;
+    }
+    
+    // Regular query
     let supabaseQuery = supabase.from('users').select('*');
     
     if (query.username) {
@@ -18,13 +50,19 @@ const User = {
       supabaseQuery = supabaseQuery.eq('mobile', query.mobile);
     }
     
-    const { data, error } = await supabaseQuery.single();
-    
-    if (error) {
+    try {
+      const { data, error } = await supabaseQuery.maybeSingle();
+      
+      if (error) {
+        console.error('Error finding user:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in findOne:', error);
       return null;
     }
-    
-    return data;
   },
   
   async save(userData: IUser): Promise<IUser | null> {

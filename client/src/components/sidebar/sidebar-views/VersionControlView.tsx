@@ -1,6 +1,7 @@
 
 import { useState } from "react";
-import { LuGitBranch, LuGitCommit, LuGitPullRequest, LuGitMerge } from "react-icons/lu";
+import { LuGitBranch, LuGitPullRequest, LuGitMerge } from "react-icons/lu";
+import { FaGitAlt } from "react-icons/fa"; // Replace LuGitCommit with FaGitAlt or another valid icon
 import useResponsive from "@/hooks/useResponsive";
 
 function VersionControlView() {
@@ -10,7 +11,7 @@ function VersionControlView() {
     { name: "develop", current: false },
     { name: "feature/user-auth", current: false }
   ]);
-  const [commits, setCommits] = useState([
+  const [commits] = useState([
     { id: "abc123", message: "Initial commit", author: "User", timestamp: "2 days ago" },
     { id: "def456", message: "Add version control feature", author: "User", timestamp: "1 day ago" },
     { id: "ghi789", message: "Fix styling issues", author: "User", timestamp: "12 hours ago" }
@@ -51,7 +52,7 @@ function VersionControlView() {
 
       <div>
         <h2 className="text-md font-medium mb-2 flex items-center gap-1">
-          <LuGitCommit size={16} /> Commits
+          <FaGitAlt size={16} /> Commits
         </h2>
         <ul className="space-y-2">
           {commits.map(commit => (
@@ -69,8 +70,8 @@ function VersionControlView() {
         <button className="flex items-center gap-1 rounded-md bg-primary py-2 px-3 text-black">
           <LuGitPullRequest size={16} /> Pull
         </button>
-        <button className="flex items-center gap-1 rounded-md bg-white py-2 px-3 text-black">
-          <LuGitCommit size={16} /> Commit
+        <button className="flex items-center gap-1 rounded-md bg-primary py-2 px-3 text-black">
+          <FaGitAlt size={16} /> Commit
         </button>
         <button className="flex items-center gap-1 rounded-md bg-gray-700 py-2 px-3">
           <LuGitMerge size={16} /> Merge

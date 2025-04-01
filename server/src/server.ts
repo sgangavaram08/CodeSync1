@@ -85,8 +85,9 @@ app.post("/login", async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 //create room db
-app.post("/create-or-update-room", async (req, res) => {
+app.post("/create-or-update-room", async (req: Request, res: Response) => {
   try {
     const { roomId, username } = req.body;
     console.log("Create/update room request:", roomId, username);
@@ -134,7 +135,7 @@ app.post("/create-or-update-room", async (req, res) => {
 });
 
 //lock feature
-app.post("/set-lock", async (req, res) => {
+app.post("/set-lock", async (req: Request, res: Response) => {
   try {
     const { roomId, lock } = req.body;
     console.log("Set lock request:", roomId, lock);
@@ -157,7 +158,7 @@ app.post("/set-lock", async (req, res) => {
 });
 
 //get lock value 
-app.get('/lock', async (req, res) => {
+app.get('/lock', async (req: Request, res: Response) => {
   try {
     const roomId = req.query.roomId as string;
     console.log("Get lock request for roomId:", roomId);

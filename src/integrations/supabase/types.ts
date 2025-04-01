@@ -9,13 +9,76 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      rooms: {
+        Row: {
+          created_at: string | null
+          id: string
+          lock: boolean | null
+          roomid: string
+          updated_at: string | null
+          username: string
+          users: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lock?: boolean | null
+          roomid: string
+          updated_at?: string | null
+          username: string
+          users?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lock?: boolean | null
+          roomid?: string
+          updated_at?: string | null
+          username?: string
+          users?: string[] | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          id: string
+          mobile: string
+          password: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mobile: string
+          password: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mobile?: string
+          password?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_rooms_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_users_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

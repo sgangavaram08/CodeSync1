@@ -8,7 +8,7 @@ import { USER_CONNECTION_STATUS, User as UserType } from "./types/user";
 import { Server } from "socket.io";
 import path from "path";
 import bcrypt from "bcryptjs";
-import User from "./models/User";
+import User, { IUser } from "./models/User";
 import { connectDB } from "./config/db";
 import Room, { RoomData } from "./models/Room";
 
@@ -184,10 +184,10 @@ const io = new Server(server, {
   pingTimeout: 60000,
 });
 
-let userSocketMap: User[] = [];
+let userSocketMap: UserType[] = [];
 
 // Function to get all users in a room
-function getUsersInRoom(roomId: string): User[] {
+function getUsersInRoom(roomId: string): UserType[] {
   return userSocketMap.filter((user) => user.roomId == roomId);
 }
 
@@ -204,7 +204,7 @@ function getRoomId(socketId: SocketId): string | null {
   return roomId;
 }
 
-function getUserBySocketId(socketId: SocketId): User | null {
+function getUserBySocketId(socketId: SocketId): UserType | null {
   const user = userSocketMap.find((user) => user.socketId === socketId);
   if (!user) {
     console.error("User not found for socket ID:", socketId);

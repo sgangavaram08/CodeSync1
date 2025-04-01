@@ -1,3 +1,4 @@
+
 import { useFileSystem } from "@/context/FileContext"
 import { getIconClassName } from "@/utils/getIconClassName"
 import { Icon } from "@iconify/react"
@@ -60,6 +61,12 @@ function FileTab() {
         // Check if custom mapping exists
         if (customMapping[extension]) {
             setLanguage(customMapping[extension])
+            return
+        }
+
+        // Special case for C++ files
+        if (['cpp', 'cc', 'cxx', 'h', 'hpp'].includes(extension)) {
+            setLanguage('cpp')
             return
         }
 

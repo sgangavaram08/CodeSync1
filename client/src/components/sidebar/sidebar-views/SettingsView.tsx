@@ -1,10 +1,11 @@
+
 import Select from "@/components/common/Select"
 import { useSettings } from "@/context/SettingContext"
 import useResponsive from "@/hooks/useResponsive"
 import { editorFonts } from "@/resources/Fonts"
 import { editorThemes } from "@/resources/Themes"
 import { langNames } from "@uiw/codemirror-extensions-langs"
-import { ChangeEvent, useEffect } from "react"
+import { ChangeEvent, useEffect, useMemo } from "react"
 
 function SettingsView() {
     const {
@@ -21,6 +22,14 @@ function SettingsView() {
         resetSettings,
     } = useSettings()
     const { viewHeight } = useResponsive()
+
+    // Add C++ to language names if not already present
+    const extendedLangNames = useMemo(() => {
+        if (!langNames.includes("cpp") && !langNames.includes("C++")) {
+            return [...langNames, "cpp", "C++"];
+        }
+        return langNames;
+    }, []);
 
     const handleFontFamilyChange = (e: ChangeEvent<HTMLSelectElement>) =>
         setFontFamily(e.target.value)
@@ -84,7 +93,7 @@ function SettingsView() {
             <Select
                 onChange={handleLanguageChange}
                 value={language}
-                options={langNames}
+                options={extendedLangNames}
                 title="Language"
             />
             {/* Show GitHub corner option */}

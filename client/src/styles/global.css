@@ -1,3 +1,4 @@
+
 @import url("tldraw/tldraw.css");
 
 @tailwind base;
@@ -15,6 +16,8 @@ body {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    background-color: #222222;
+    color: #f5f5f5;
 
     --sb-track-color: #3d404a;
     --sb-thumb-color: #e1e1ffb3;

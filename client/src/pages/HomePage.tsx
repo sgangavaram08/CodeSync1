@@ -1,27 +1,19 @@
+
 import illustration from "@/assets/illustration.svg"
 import FormComponent from "@/components/forms/FormComponent"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-// import Footer from "@/components/common/Footer";
+import { useEffect } from "react"
 
 function HomePage() {
-    const [init, setInit] = useState(false)
-    // const navigate = useNavigatee()
     useEffect(() => {
-        const user = localStorage.getItem("USER");
-        const username = JSON.parse(user).user.name
-        console.log(username);
+        // Check if there's stored user data
+        const storedUser = localStorage.getItem("username");
+        console.log("Stored username:", storedUser);
         
-
-        if (username) {
-            ("")
-        } else {
-            // navigate("/login")
-        }
-    }, [])
+        // We don't need to redirect here, just log the info for debugging
+    }, []);
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-16">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-16 bg-dark text-light">
             <div className="my-12 flex h-full min-w-full flex-col items-center justify-evenly sm:flex-row sm:pt-0">
                 <div className="flex w-full animate-up-down justify-center sm:w-1/2 sm:pl-4">
                     <img
@@ -34,7 +26,6 @@ function HomePage() {
                     <FormComponent />
                 </div>
             </div>
-            {/* <Footer /> */}
         </div>
     )
 }

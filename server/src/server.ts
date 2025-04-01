@@ -1,4 +1,3 @@
-
 import express, { Response, Request } from "express";
 import dotenv from "dotenv";
 import http from "http";
@@ -208,7 +207,7 @@ function getRoomId(socketId: SocketId): string | null {
 function getUserBySocketId(socketId: SocketId): UserType | null {
   const user = userSocketMap.find((user) => user.socketId === socketId);
   if (!user) {
-    console.error("User not found for socket ID:", socketId);
+    console.log(`No user found for socket ID: ${socketId} - this is normal for new connections`);
     return null;
   }
   return user;

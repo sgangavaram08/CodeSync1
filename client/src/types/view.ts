@@ -1,19 +1,21 @@
-enum VIEWS {
-    FILES = "FILES",
-    CHATS = "CHATS",
-    CLIENTS = "CLIENTS",
-    RUN = "RUN",
-    COPILOT = "COPILOT",
-    SETTINGS = "SETTINGS",
+
+import { ReactNode } from "react"
+
+export enum VIEWS {
+    FILES = "Files",
+    CLIENTS = "Clients",
+    SETTINGS = "Settings",
+    CHATS = "Chats",
+    COPILOT = "Copilot",
+    RUN = "Run",
+    VERSION_CONTROL = "Version Control"
 }
 
-interface ViewContext {
+export type ViewContext = {
     activeView: VIEWS
-    setActiveView: (activeView: VIEWS) => void
+    setActiveView: (view: VIEWS) => void
     isSidebarOpen: boolean
-    setIsSidebarOpen: (isSidebarOpen: boolean) => void
-    viewComponents: { [key in VIEWS]: JSX.Element }
-    viewIcons: { [key in VIEWS]: JSX.Element }
+    setIsSidebarOpen: (isOpen: boolean) => void
+    viewComponents: { [key in VIEWS]: ReactNode }
+    viewIcons: { [key in VIEWS]: ReactNode }
 }
-
-export { ViewContext, VIEWS }

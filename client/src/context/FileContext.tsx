@@ -851,7 +851,7 @@ function FileContextProvider({ children }: { children: ReactNode }) {
                 });
 
                 const action = isLocked ? 'locked' : 'unlocked';
-                toast.info(`${username} has ${action} this file`);
+                toast(`${username} has ${action} this file`);
             }
         },
         [activeFile, setFileStructure, setOpenFiles, setActiveFile]

@@ -251,20 +251,22 @@ function Editor() {
                     </button>
                 )}
                 
-                {/* File lock toggle button */}
-                {activeFile && Type === "admin" && (
+                {/* File lock toggle button - available for all users */}
+                {activeFile && (
                     <button 
                         className="absolute bottom-1 right-32 z-10 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
                         onClick={handleToggleFileLock}
+                        disabled={isFileLockedByOthers}
+                        title={isFileLockedByOthers ? `Locked by ${activeFile.lockedBy}` : activeFile.isLocked ? "Unlock this file" : "Lock this file"}
                     >
                         <span>{activeFile.isLocked ? <FaLock /> : <FaLockOpen />}</span>
                         <span>{activeFile.isLocked ? "Unlock File" : "Lock File"}</span>
                     </button>
                 )}
                 
-                {/* File lock status indicator for users */}
-                {activeFile?.isLocked && Type === "user" && (
-                    <div className="absolute bottom-1 right-32 z-10 flex items-center gap-2 rounded-full bg-gray-700 px-4 py-2 font-medium text-white">
+                {/* File lock status indicator when locked by others */}
+                {isFileLockedByOthers && (
+                    <div className="absolute bottom-1 left-2 z-10 flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 font-medium text-white">
                         <span><FaLock /></span>
                         <span>Locked by {activeFile.lockedBy}</span>
                     </div>

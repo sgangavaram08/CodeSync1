@@ -327,6 +327,17 @@ io.on("connection", (socket) => {
     socket.broadcast.to(roomId).emit(SocketEvent.FILE_DELETED, { fileId });
   });
 
+  // Handle file lock toggling
+  socket.on(SocketEvent.FILE_LOCK_TOGGLED, ({ fileId, username, isLocked }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    socket.broadcast.to(roomId).emit(SocketEvent.FILE_LOCK_TOGGLED, { 
+      fileId, 
+      username, 
+      isLocked 
+    });
+  });
+
   // Handle user status
   socket.on(SocketEvent.USER_OFFLINE, ({ socketId }) => {
     userSocketMap = userSocketMap.map((user) => {

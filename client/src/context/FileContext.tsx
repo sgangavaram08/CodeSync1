@@ -630,6 +630,66 @@ function FileContextProvider({ children }: { children: ReactNode }) {
         })
     }
 
+    const toggleFileLock = useCallback((fileId: string, username: string, sendToSocket: boolean = true) => {
+        const updateFileLock = (directory: FileSystemItem): FileSystemItem => {
+            if (directory.id === fileId) {
+                // Toggle lock status
+                const isLocked = !directory.isLocked;
+                return {
+                    ...directory,
+                    isLocked,
+                    lockedBy: isLocked ? username : undefined
+                };
+            } else if (directory.children) {
+                return {
+                    ...directory,
+                    children: directory.children.map(updateFileLock)
+                };
+            } else {
+                return directory;
+            }
+        };
+
+        // Update file structure
+        setFileStructure(prevFileStructure => updateFileLock(prevFileStructure));
+
+        // Update openFiles if the file is open
+        setOpenFiles(prevOpenFiles => 
+            prevOpenFiles.map(file => 
+                file.id === fileId 
+                    ? { 
+                        ...file, 
+                        isLocked: !file.isLocked,
+                        lockedBy: !file.isLocked ? username : undefined
+                    } 
+                    : file
+            )
+        );
+
+        // Update activeFile if it's the file being locked/unlocked
+        if (activeFile?.id === fileId) {
+            setActiveFile(prevActiveFile => {
+                if (prevActiveFile) {
+                    const isLocked = !prevActiveFile.isLocked;
+                    return {
+                        ...prevActiveFile,
+                        isLocked,
+                        lockedBy: isLocked ? username : undefined
+                    };
+                }
+                return prevActiveFile;
+            });
+        }
+
+        if (sendToSocket) {
+            socket.emit(SocketEvent.FILE_LOCK_TOGGLED, {
+                fileId,
+                username,
+                isLocked: !getFileById(fileStructure, fileId)?.isLocked
+            });
+        }
+    }, [fileStructure, activeFile, socket]);
+
     const handleUserJoined = useCallback(
         ({ user }: { user: RemoteUser }) => {
             toast.success(`${user.username} joined the room`)
@@ -742,6 +802,61 @@ function FileContextProvider({ children }: { children: ReactNode }) {
         [deleteFile],
     )
 
+    const handleFileLockToggled = useCallback(
+        ({ fileId, username, isLocked }: { fileId: string; username: string; isLocked: boolean }) => {
+            const updateFileLockStatus = (directory: FileSystemItem): FileSystemItem => {
+                if (directory.id === fileId) {
+                    return {
+                        ...directory,
+                        isLocked,
+                        lockedBy: isLocked ? username : undefined
+                    };
+                } else if (directory.children) {
+                    return {
+                        ...directory,
+                        children: directory.children.map(updateFileLockStatus)
+                    };
+                } else {
+                    return directory;
+                }
+            };
+
+            // Update file structure
+            setFileStructure(prevFileStructure => updateFileLockStatus(prevFileStructure));
+
+            // Update openFiles if the file is open
+            setOpenFiles(prevOpenFiles => 
+                prevOpenFiles.map(file => 
+                    file.id === fileId 
+                        ? { 
+                            ...file, 
+                            isLocked,
+                            lockedBy: isLocked ? username : undefined
+                        } 
+                        : file
+                )
+            );
+
+            // Update activeFile if it's the file being locked/unlocked
+            if (activeFile?.id === fileId) {
+                setActiveFile(prevActiveFile => {
+                    if (prevActiveFile) {
+                        return {
+                            ...prevActiveFile,
+                            isLocked,
+                            lockedBy: isLocked ? username : undefined
+                        };
+                    }
+                    return prevActiveFile;
+                });
+
+                const action = isLocked ? 'locked' : 'unlocked';
+                toast.info(`${username} has ${action} this file`);
+            }
+        },
+        [activeFile, setFileStructure, setOpenFiles, setActiveFile]
+    );
+
     useEffect(() => {
         socket.once(SocketEvent.SYNC_FILE_STRUCTURE, handleFileStructureSync)
         socket.on(SocketEvent.USER_JOINED, handleUserJoined)
@@ -753,6 +868,7 @@ function FileContextProvider({ children }: { children: ReactNode }) {
         socket.on(SocketEvent.FILE_UPDATED, handleFileUpdated)
         socket.on(SocketEvent.FILE_RENAMED, handleFileRenamed)
         socket.on(SocketEvent.FILE_DELETED, handleFileDeleted)
+        socket.on(SocketEvent.FILE_LOCK_TOGGLED, handleFileLockToggled)
 
         return () => {
             socket.off(SocketEvent.USER_JOINED)
@@ -764,6 +880,7 @@ function FileContextProvider({ children }: { children: ReactNode }) {
             socket.off(SocketEvent.FILE_UPDATED)
             socket.off(SocketEvent.FILE_RENAMED)
             socket.off(SocketEvent.FILE_DELETED)
+            socket.off(SocketEvent.FILE_LOCK_TOGGLED)
         }
     }, [
         handleDirCreated,
@@ -775,6 +892,7 @@ function FileContextProvider({ children }: { children: ReactNode }) {
         handleFileRenamed,
         handleFileStructureSync,
         handleFileUpdated,
+        handleFileLockToggled,
         handleUserJoined,
         socket,
     ])
@@ -799,6 +917,7 @@ function FileContextProvider({ children }: { children: ReactNode }) {
                 renameFile,
                 deleteFile,
                 downloadFilesAndFolders,
+                toggleFileLock
             }}
         >
             {children}

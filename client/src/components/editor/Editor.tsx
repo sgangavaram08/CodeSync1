@@ -1,3 +1,4 @@
+
 import { useAppContext } from "@/context/AppContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSettings } from "@/context/SettingContext"
@@ -39,14 +40,13 @@ function Editor() {
 
     const location = useLocation()
     const API = import.meta.env.VITE_API_URL;
-    const [usernamee, setusernamee] = useState("")
     const [showPopup, setShowPopup] = useState(false)
     const [msg, setmsg] = useState("")
     const { users, currentUser, setCurrentUser, setUsers, status } =
         useAppContext()
     const [Type, SetType] = useState("")
 
-    const { activeFile, setActiveFile } = useFileSystem()
+    const { activeFile, setActiveFile, toggleFileLock } = useFileSystem()
     const { theme, language, fontSize } = useSettings()
     const { socket } = useSocket()
     const { viewHeight } = useResponsive()
@@ -57,8 +57,14 @@ function Editor() {
     )
     const [extensions, setExtensions] = useState<Extension[]>([])
 
+    const isFileLockedByOthers = activeFile?.isLocked && activeFile?.lockedBy !== currentUser.username;
+
     const onCodeChange = (code: string, view: ViewUpdate) => {
         if (!activeFile) return
+        if (isFileLockedByOthers) {
+            toast.error(`This file is locked by ${activeFile.lockedBy}`)
+            return
+        }
 
         const file: FileSystemItem = { ...activeFile, content: code }
         setActiveFile(file)
@@ -90,13 +96,11 @@ function Editor() {
                 },
             )
             setLock(true)
-
-
-            // setmsg(`Locked by ${}`);
         } catch (error) {
             console.error(error)
         }
     }
+    
     const handleUnLock = async () => {
         try {
             const response = await axios.post(
@@ -107,13 +111,21 @@ function Editor() {
                 },
             )
             setLock(false)
-
         } catch (error) {
             console.error(error)
         }
     }
-    //mesage popup
 
+    // File lock toggle
+    const handleToggleFileLock = () => {
+        if (!activeFile) return;
+        toggleFileLock(activeFile.id, currentUser.username);
+        
+        const lockStatus = activeFile.isLocked ? 'unlocked' : 'locked';
+        toast.success(`File ${lockStatus} successfully`);
+    }
+    
+    //mesage popup
     useEffect(() => {
         if (currentUser.username.length > 0) return
         const username: string = localStorage.getItem("username") ?? ""
@@ -136,7 +148,7 @@ function Editor() {
         setCurrentUser,
         socket,
     ])
-    // console.log(roomId,"room")
+
     const handleLoadLockValue = async () => {
         try {
             const response = await axios.get(`${API}/lock`, {
@@ -151,9 +163,11 @@ function Editor() {
             console.error(error, "error while getting lock value")
         }
     }
+    
     useEffect(() => {
         handleLoadLockValue()
     }, [lock, showPopup])
+    
     useEffect(() => {
         if (showPopup) {
             const timer = setTimeout(() => {
@@ -207,7 +221,7 @@ function Editor() {
                    onClick={handleLock}
                  >
                    <span>🔒</span>
-                   <span>Lock</span>
+                   <span>Lock Room</span>
                  </button>
                 )}
                 {Type && Type == "admin" && lock == true && (
@@ -218,7 +232,7 @@ function Editor() {
                             handleUnLock()
                         }}
                     >
-                        🔒 UnLock
+                        🔒 Unlock Room
                     </button>
                 )}
                 {Type && Type == "user" && (
@@ -236,6 +250,25 @@ function Editor() {
                         {lock == true ? <span style={{ display: "flex", justifyContent: "center", alignContent: "center" }}><FaLock /> </span> : <FaLockOpen />}
                     </button>
                 )}
+                
+                {/* File lock toggle button */}
+                {activeFile && Type === "admin" && (
+                    <button 
+                        className="absolute bottom-1 right-32 z-10 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
+                        onClick={handleToggleFileLock}
+                    >
+                        <span>{activeFile.isLocked ? <FaLock /> : <FaLockOpen />}</span>
+                        <span>{activeFile.isLocked ? "Unlock File" : "Lock File"}</span>
+                    </button>
+                )}
+                
+                {/* File lock status indicator for users */}
+                {activeFile?.isLocked && Type === "user" && (
+                    <div className="absolute bottom-1 right-32 z-10 flex items-center gap-2 rounded-full bg-gray-700 px-4 py-2 font-medium text-white">
+                        <span><FaLock /></span>
+                        <span>Locked by {activeFile.lockedBy}</span>
+                    </div>
+                )}
             </div>
             {msg && Type == "user" && (
                 <div className="absolute bottom-20 right-7 z-50 p-4 shadow-md">
@@ -243,8 +276,6 @@ function Editor() {
                     <div id={lock ? "animatedButton" : "animatedButtonn"} className="rounded-lg p-4 shadow-md backdrop-blur-md backdrop-brightness-125 backdrop-filter">
                         <p className="text-lg font-bold color-black" style={{ textShadow: "0.5px 0.5px 3px black" }}>{lock == true ? <span>{msg} - <span style={{ color: "red", textShadow: "1px 1xp 3px black" }}>has Locked the screen</span></span> : <span>{msg} - <span style={{ color: "yellow", textShadow: "1px 1xp 3px black" }}>has Unlocked the screen</span></span>}</p>
                     </div>
-
-                    {/* <span style={{background:"orange",color:"white"}}>{lock == true ? `${msg}- locked the screen` : `${msg}- unlocked the screen`}</span> */}
                 </div>
             )}
             <CodeMirror
@@ -259,7 +290,7 @@ function Editor() {
                     height: viewHeight,
                     position: "relative",
                 }}
-                readOnly={Type !== "admin" ? lock : false}
+                readOnly={(Type !== "admin" && lock) || isFileLockedByOthers}
             />
         </>
     )

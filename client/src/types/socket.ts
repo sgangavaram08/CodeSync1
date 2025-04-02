@@ -1,3 +1,4 @@
+
 import { Socket } from "socket.io-client"
 
 type SocketId = string
@@ -26,6 +27,7 @@ enum SocketEvent {
     REQUEST_DRAWING = "request-drawing",
     SYNC_DRAWING = "sync-drawing",
     DRAWING_UPDATE = "drawing-update",
+    FILE_LOCK_TOGGLED = "file-lock-toggled"
 }
 
 interface SocketContext {

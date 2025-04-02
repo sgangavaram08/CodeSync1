@@ -1,3 +1,4 @@
+
 type Id = string
 type FileName = string
 type FileContent = string
@@ -9,6 +10,8 @@ interface FileSystemItem {
     children?: FileSystemItem[]
     content?: FileContent
     isOpen?: boolean
+    isLocked?: boolean
+    lockedBy?: string
 }
 
 interface FileContext {
@@ -29,6 +32,7 @@ interface FileContext {
     renameFile: (fileId: Id, newName: FileName) => boolean
     deleteFile: (fileId: Id) => void
     downloadFilesAndFolders: () => void
+    toggleFileLock: (fileId: Id, username: string) => void
 }
 
 export { FileSystemItem, FileContent, FileContext, Id, FileName }

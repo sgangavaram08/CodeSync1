@@ -96,8 +96,10 @@ function Editor() {
                 },
             )
             setLock(true)
+            toast.success("Room locked successfully", { duration: 3000 })
         } catch (error) {
             console.error(error)
+            toast.error("Failed to lock room", { duration: 3000 })
         }
     }
     
@@ -111,8 +113,10 @@ function Editor() {
                 },
             )
             setLock(false)
+            toast.success("Room unlocked successfully", { duration: 3000 })
         } catch (error) {
             console.error(error)
+            toast.error("Failed to unlock room", { duration: 3000 })
         }
     }
 
@@ -122,7 +126,7 @@ function Editor() {
         toggleFileLock(activeFile.id, currentUser.username);
         
         const lockStatus = activeFile.isLocked ? 'unlocked' : 'locked';
-        toast.success(`File ${lockStatus} successfully`);
+        toast.success(`File ${lockStatus} successfully`, { duration: 3000 });
     }
     
     //mesage popup
@@ -159,6 +163,11 @@ function Editor() {
             setShowPopup(true)
             setLock(response.data.lock)
             setmsg(`${response.data.admin}`)
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                setShowPopup(false)
+            }, 3000)
         } catch (error) {
             console.error(error, "error while getting lock value")
         }
@@ -166,16 +175,7 @@ function Editor() {
     
     useEffect(() => {
         handleLoadLockValue()
-    }, [lock, showPopup])
-    
-    useEffect(() => {
-        if (showPopup) {
-            const timer = setTimeout(() => {
-                setShowPopup(false)
-            }, 3000)
-            return () => clearTimeout(timer)
-        }
-    }, [showPopup])
+    }, [lock])
 
     useEffect(() => {
         const storedData = localStorage.getItem("data")
@@ -215,40 +215,45 @@ function Editor() {
     return (
         <>
             <div className="relative">
-                {Type && Type == "admin" && lock == false && (
-                   <button
-                   className="absolute bottom-1 right-2 z-10 flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-pink-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
-                   onClick={handleLock}
-                 >
-                   <span>🔒</span>
-                   <span>Lock Room</span>
-                 </button>
+                {/* Move Lock Room button to top right corner */}
+                {Type && Type == "admin" && (
+                   <div className="absolute top-2 right-2 z-10">
+                       {lock == false ? (
+                           <button
+                               className="flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-pink-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
+                               onClick={handleLock}
+                           >
+                               <span>🔒</span>
+                               <span>Lock Room</span>
+                           </button>
+                       ) : (
+                           <button
+                               className="flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-teal-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
+                               onClick={handleUnLock}
+                           >
+                               <span>🔓</span>
+                               <span>Unlock Room</span>
+                           </button>
+                       )}
+                   </div>
                 )}
-                {Type && Type == "admin" && lock == true && (
-                    <button
-                        className="right-  z-2 absolute bottom-1 right-2 rounded-full bg-red-500 p-2 text-white"
-                        aria-label="Lock"
-                        onClick={() => {
-                            handleUnLock()
-                        }}
-                    >
-                        🔒 Unlock Room
-                    </button>
-                )}
+                
                 {Type && Type == "user" && (
-                    <button
-                        style={
-                            { cursor: "none" }
-                        }
-                        className={
-                            lock == true
-                                ? "right-  z-2 absolute bottom-1 right-2 rounded-full bg-red-500 p-2 text-white"
-                                : "right-  z-2 absolute bottom-1 right-2 rounded-full bg-green-500 p-2 text-white"
-                        }
-                        aria-label="Lock"
-                    >
-                        {lock == true ? <span style={{ display: "flex", justifyContent: "center", alignContent: "center" }}><FaLock /> </span> : <FaLockOpen />}
-                    </button>
+                    <div className="absolute top-2 right-2 z-10">
+                        <button
+                            style={{ cursor: "default" }}
+                            className={
+                                lock == true
+                                    ? "flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-white"
+                                    : "flex items-center gap-2 rounded-full bg-green-500 px-4 py-2 text-white"
+                            }
+                        >
+                            {lock == true ? 
+                                <span className="flex items-center"><FaLock className="mr-2" /> Room Locked</span> 
+                                : <span className="flex items-center"><FaLockOpen className="mr-2" /> Room Unlocked</span>
+                            }
+                        </button>
+                    </div>
                 )}
                 
                 {/* File lock toggle button - available for all users */}
@@ -272,11 +277,15 @@ function Editor() {
                     </div>
                 )}
             </div>
-            {msg && Type == "user" && (
-                <div className="absolute bottom-20 right-7 z-50 p-4 shadow-md">
-
+            {msg && Type == "user" && showPopup && (
+                <div className="absolute bottom-20 right-7 z-50">
                     <div id={lock ? "animatedButton" : "animatedButtonn"} className="rounded-lg p-4 shadow-md backdrop-blur-md backdrop-brightness-125 backdrop-filter">
-                        <p className="text-lg font-bold color-black" style={{ textShadow: "0.5px 0.5px 3px black" }}>{lock == true ? <span>{msg} - <span style={{ color: "red", textShadow: "1px 1xp 3px black" }}>has Locked the screen</span></span> : <span>{msg} - <span style={{ color: "yellow", textShadow: "1px 1xp 3px black" }}>has Unlocked the screen</span></span>}</p>
+                        <p className="text-lg font-bold" style={{ textShadow: "0.5px 0.5px 3px black" }}>
+                            {lock ? 
+                                <span>{msg} - <span style={{ color: "red", textShadow: "1px 1px 3px black" }}>has Locked the room</span></span> 
+                                : <span>{msg} - <span style={{ color: "yellow", textShadow: "1px 1px 3px black" }}>has Unlocked the room</span></span>
+                            }
+                        </p>
                     </div>
                 </div>
             )}

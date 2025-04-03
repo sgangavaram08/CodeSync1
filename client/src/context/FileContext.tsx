@@ -1,7 +1,8 @@
+
 import {
     FileSystemItem,
     FileContent,
-    FileContext,
+    FileContext as FileContextType,
     Id,
     FileName,
 } from "@/types/file"
@@ -30,10 +31,11 @@ interface FileContextProps {
     setFileStructure: Dispatch<SetStateAction<FileSystemItem>>
 }
 
-const FileContext = createContext<FileContext | null>(null)
+// Renamed from FileContext to FileContextImpl to avoid name collision
+const FileContextImpl = createContext<FileContextType | null>(null)
 
-export const useFileSystem = (): FileContext => {
-    const context = useContext(FileContext)
+export const useFileSystem = (): FileContextType => {
+    const context = useContext(FileContextImpl)
     if (!context) {
         throw new Error("useFileSystem must be used within a FileProvider")
     }
@@ -447,7 +449,7 @@ export const FileContextProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <FileContext.Provider
+        <FileContextImpl.Provider
             value={{
                 fileStructure,
                 openFiles,
@@ -470,8 +472,9 @@ export const FileContextProvider = ({ children }: { children: ReactNode }) => {
             }}
         >
             {children}
-        </FileContext.Provider>
+        </FileContextImpl.Provider>
     )
 }
 
-export { FileContext }
+// Export the renamed context
+export { FileContextImpl as FileContext }

@@ -139,13 +139,17 @@ app.get('/lock', async (req: Request, res: Response) => {
     const roomId = req.query.roomId as string;
     console.log("Get room info for roomId:", roomId);
 
+    if (!roomId) {
+      return res.status(400).json({ message: 'RoomId is required' });
+    }
+
     // Use roomId to fetch the room information
     const room = await Room.findOne({ roomId });
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-    res.json({ admin: room.username });
+    res.json({ admin: room.username || 'Unknown admin' });
   } catch (error) {
     console.error("Get room info error:", error);
     res.status(500).json({ message: 'Failed to get room info' });

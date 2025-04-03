@@ -38,7 +38,7 @@ function Editor() {
     const navigate = useNavigate()
 
     const location = useLocation()
-    const API = import.meta.env.VITE_API_URL;
+    const API = import.meta.env.VITE_API_URL || '';
     const [showPopup, setShowPopup] = useState(false)
     const [msg, setmsg] = useState("")
     const { users, currentUser, setCurrentUser, setUsers, status } =
@@ -119,6 +119,12 @@ function Editor() {
     ])
 
     const handleLoadLockValue = async () => {
+        // Only try to fetch lock value if we have valid API URL and roomId
+        if (!API || !roomId) {
+            console.log("Skipping lock value fetch - missing API URL or roomId")
+            return
+        }
+        
         try {
             const response = await axios.get(`${API}/lock`, {
                 params: {
@@ -134,12 +140,16 @@ function Editor() {
             }, 3000)
         } catch (error) {
             console.error(error, "error while getting lock value")
+            // Don't show error toast to avoid disrupting user experience
         }
     }
     
     useEffect(() => {
-        handleLoadLockValue()
-    }, [])
+        // Only load lock value if we have both API and roomId
+        if (API && roomId) {
+            handleLoadLockValue()
+        }
+    }, [API, roomId])
 
     useEffect(() => {
         const storedData = localStorage.getItem("data")

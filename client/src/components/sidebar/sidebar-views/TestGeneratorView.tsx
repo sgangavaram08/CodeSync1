@@ -29,10 +29,12 @@ function TestGeneratorView() {
             
             if (testsDir) {
                 setTestsDirectoryId(testsDir.id);
+                console.log("Found existing Tests directory:", testsDir.id);
             } else if (fileStructure.id) {
                 // If it doesn't exist, create it
                 const newDirId = createDirectory(fileStructure.id, "Tests");
                 setTestsDirectoryId(newDirId);
+                console.log("Created new Tests directory with ID:", newDirId);
                 
                 // Notify other clients about the new directory
                 if (socket && newDirId) {
@@ -62,7 +64,10 @@ function TestGeneratorView() {
             // Create a prompt for the test generation
             const prompt = `Generate ${testFramework} test cases for the following code. Include detailed test cases for edge cases, normal cases, and error handling. Return only the test code without explanations:\n\n${activeFile.content}`
             
-            // Use the copilot context to generate tests
+            console.log("Generating tests with framework:", testFramework);
+            console.log("Active file:", activeFile.name);
+            
+            // Use fetch API directly for reliability
             const response = await fetch("https://api.pollinations.ai/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -72,7 +77,7 @@ function TestGeneratorView() {
                     messages: [
                         {
                             role: "system",
-                            content: `You are a test case generator for ${testFramework}. Generate comprehensive test cases for the provided code. Only return the code, formatted in Markdown using the appropriate language syntax.`,
+                            content: `You are a test case generator for ${testFramework}. Generate comprehensive test cases for the provided code. Only return the code, formatted correctly.`,
                         },
                         {
                             role: "user",
@@ -83,24 +88,32 @@ function TestGeneratorView() {
                 }),
             })
 
+            if (!response.ok) {
+                throw new Error(`API responded with status: ${response.status}`);
+            }
+
             const data = await response.json()
-            if (data) {
-                const testCode = data.choices?.[0]?.message?.content || "// No tests generated"
+            console.log("Test generation response:", data);
+            
+            if (data && data.choices && data.choices[0] && data.choices[0].message) {
+                const testCode = data.choices[0].message.content || "// No tests generated"
                 setTestOutput(`\`\`\`${testFramework === "jest" ? "javascript" : testFramework}\n${testCode}\n\`\`\``)
                 toast.success("Test cases generated successfully")
                 
-                // Automatically create the test file in the Tests directory
-                generateTestFile(testCode);
+                // Create the test file in the Tests directory
+                createTestFile(testCode);
                 
                 // Emit test generated event
                 socket.emit(SocketEvent.TEST_GENERATED, {
                     fileName: activeFile.name,
                     testCode
                 });
+            } else {
+                throw new Error("Invalid response format from API");
             }
         } catch (error) {
             console.error("Error generating test cases:", error)
-            toast.error("Failed to generate test cases")
+            toast.error(`Failed to generate test cases: ${error.message}`)
             setTestOutput("```\n// Failed to generate test cases\n```")
         } finally {
             setIsGenerating(false)
@@ -108,24 +121,32 @@ function TestGeneratorView() {
     }
 
     // Create a test file from the generated output
-    const generateTestFile = (testCode) => {
+    const createTestFile = (testCode) => {
         if (!activeFile || !testsDirectoryId) {
             toast.error("Could not create test file - active file or Tests directory not found");
             return;
         }
 
-        const { name } = activeFile;
-        const baseName = name.split(".")[0];
-        const extension = testFramework === "pytest" ? ".py" : ".test.js";
-        const testFileName = `${baseName}${extension}`;
-        
         try {
+            const { name } = activeFile;
+            const baseName = name.split(".")[0];
+            const extension = testFramework === "pytest" ? ".py" : ".test.js";
+            const testFileName = `${baseName}${extension}`;
+            
+            console.log("Creating test file:", testFileName, "in directory:", testsDirectoryId);
+            
             // Create a new test file
             const fileId = createFile(testsDirectoryId, testFileName);
             
-            // Update the file content - clean the markdown formatting
-            const cleanTestCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
+            if (!fileId) {
+                toast.error("Failed to create test file - file ID was not returned");
+                return;
+            }
+            
+            // Clean the test code by removing markdown formatting if it exists
+            const cleanTestCode = testCode.replace(/```[\w]*\n?/g, "").trim();
             updateFileContent(fileId, cleanTestCode);
+            console.log("Test file created with ID:", fileId);
 
             // Emit file created event
             socket.emit(SocketEvent.FILE_CREATED, {
@@ -141,7 +162,7 @@ function TestGeneratorView() {
             toast.success(`Test file ${testFileName} created in Tests folder`);
         } catch (error) {
             console.error("Error creating test file:", error);
-            toast.error("Failed to create test file");
+            toast.error(`Failed to create test file: ${error.message}`);
         }
     }
 
@@ -164,7 +185,8 @@ function TestGeneratorView() {
             return;
         }
 
-        generateTestFile(testOutput.replace(/```[\w]*\n?/g, "").trim());
+        const cleanCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
+        createTestFile(cleanCode);
     }
 
     return (

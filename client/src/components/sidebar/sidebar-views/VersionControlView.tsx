@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 
 function VersionControlView() {
   const { viewHeight } = useResponsive();
-  const { fileStructure, activeFile } = useFileSystem();
+  const { fileStructure, activeFile, updateFileContent, setActiveFile } = useFileSystem();
   const { socket } = useSocket();
   const { currentUser } = useAppContext();
 
@@ -26,6 +26,9 @@ function VersionControlView() {
   const [changedFiles, setChangedFiles] = useState([]);
   const [commitMessage, setCommitMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mergeInProgress, setMergeInProgress] = useState(false);
+  const [pullInProgress, setPullInProgress] = useState(false);
+  const [selectedBranchForMerge, setSelectedBranchForMerge] = useState('');
 
   // Track changes for version control
   useEffect(() => {
@@ -198,6 +201,161 @@ function VersionControlView() {
     
     toast.success(`Switched to branch "${branchName}"`);
   };
+  
+  // Pull code from remote (simulated)
+  const pullCode = () => {
+    setPullInProgress(true);
+    
+    // Simulate network delay
+    setTimeout(() => {
+      // Simulate getting updates from remote
+      const currentBranch = branches.find(branch => branch.current);
+      if (!currentBranch) {
+        toast.error("No active branch found");
+        setPullInProgress(false);
+        return;
+      }
+      
+      // Simulate pulling changes
+      toast.success(`Pulled latest changes from ${currentBranch.name}`);
+      
+      // Notify other users
+      socket.emit(SocketEvent.PULL_CODE, { 
+        branch: currentBranch.name,
+        by: currentUser.username
+      });
+      
+      // Update file structure randomly as example
+      if (fileStructure && fileStructure.children && fileStructure.children.length > 0) {
+        // Select a random file
+        const randomFileIndex = Math.floor(Math.random() * fileStructure.children.length);
+        const randomFile = fileStructure.children.find(item => item.type === "file");
+        
+        if (randomFile && randomFile.content) {
+          // Update the file with a comment indicating the pull
+          const updatedContent = randomFile.content + `\n\n// Changes pulled from ${currentBranch.name} by ${currentUser.username}`;
+          
+          updateFileContent(randomFile.id, updatedContent);
+          
+          // Update active file if it's the same one
+          if (activeFile && activeFile.id === randomFile.id) {
+            setActiveFile({ ...activeFile, content: updatedContent });
+          }
+          
+          // Emit the file updated event
+          socket.emit(SocketEvent.FILE_UPDATED, {
+            fileId: randomFile.id,
+            newContent: updatedContent
+          });
+        }
+      }
+      
+      setPullInProgress(false);
+    }, 2000);
+  };
+  
+  // Merge branches (simulated)
+  const mergeBranches = () => {
+    // Get current branch
+    const currentBranch = branches.find(branch => branch.current);
+    if (!currentBranch) {
+      toast.error("No active branch found");
+      return;
+    }
+    
+    // Show merge selection dialog
+    const branchToMerge = prompt(
+      `Select a branch to merge into ${currentBranch.name}:\n${
+        branches.filter(b => !b.current).map(b => b.name).join("\n")
+      }`
+    );
+    
+    if (!branchToMerge) return;
+    
+    // Validate selection
+    if (!branches.some(b => b.name === branchToMerge)) {
+      toast.error(`Branch "${branchToMerge}" does not exist`);
+      return;
+    }
+    
+    if (branchToMerge === currentBranch.name) {
+      toast.error("Cannot merge a branch into itself");
+      return;
+    }
+    
+    setMergeInProgress(true);
+    setSelectedBranchForMerge(branchToMerge);
+    
+    // Simulate merge process
+    setTimeout(() => {
+      // Simulate potential conflicts
+      const hasConflicts = Math.random() > 0.7;
+      
+      if (hasConflicts) {
+        toast.error(`Merge conflict detected between ${currentBranch.name} and ${branchToMerge}`);
+        
+        // Simulate conflict resolution by updating a file with conflict markers
+        if (fileStructure && fileStructure.children) {
+          const conflictFile = fileStructure.children.find(item => item.type === "file");
+          
+          if (conflictFile) {
+            const conflictContent = `
+<<<<<<< HEAD (${currentBranch.name})
+// This is the content from the current branch
+function currentFeature() {
+  console.log("Feature from current branch");
+}
+=======
+// This is the content from the branch being merged
+function incomingFeature() {
+  console.log("Feature from incoming branch");
+}
+>>>>>>> ${branchToMerge}
+`;
+            updateFileContent(conflictFile.id, conflictContent);
+            
+            // Update active file if it's the same one
+            if (activeFile && activeFile.id === conflictFile.id) {
+              setActiveFile({ ...activeFile, content: conflictContent });
+            }
+            
+            // Emit the file updated event
+            socket.emit(SocketEvent.FILE_UPDATED, {
+              fileId: conflictFile.id,
+              newContent: conflictContent
+            });
+          }
+        }
+      } else {
+        // Successful merge
+        toast.success(`Successfully merged ${branchToMerge} into ${currentBranch.name}`);
+        
+        // Create a merge commit
+        const mergeCommit = {
+          id: `merge_${Date.now().toString(16)}`,
+          message: `Merge branch '${branchToMerge}' into ${currentBranch.name}`,
+          author: currentUser.username,
+          timestamp: new Date().toISOString(),
+          files: Math.floor(Math.random() * 5) + 1
+        };
+        
+        // Add commit to local state
+        setCommits((prevCommits) => [mergeCommit, ...prevCommits]);
+        
+        // Notify other users
+        socket.emit(SocketEvent.COMMIT_CREATED, mergeCommit);
+        socket.emit(SocketEvent.MERGE_BRANCHES, {
+          from: branchToMerge,
+          to: currentBranch.name,
+          by: currentUser.username,
+          successful: true
+        });
+      }
+      
+      setMergeInProgress(false);
+      setSelectedBranchForMerge('');
+    }, 3000);
+  };
 
   return (
     <div
@@ -303,11 +461,21 @@ function VersionControlView() {
 
       {/* Actions Section */}
       <div className="pt-2 flex gap-2">
-        <button className="flex items-center gap-1 rounded-md bg-gray-700 hover:bg-gray-600 py-2 px-3 text-white flex-1">
-          <LuGitPullRequest size={16} /> Pull
+        <button 
+          className="flex items-center gap-1 rounded-md bg-gray-700 hover:bg-gray-600 py-2 px-3 text-white flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={pullCode}
+          disabled={pullInProgress}
+        >
+          <LuGitPullRequest size={16} /> 
+          {pullInProgress ? "Pulling..." : "Pull"}
         </button>
-        <button className="flex items-center gap-1 rounded-md bg-gray-700 hover:bg-gray-600 py-2 px-3 text-white flex-1">
-          <LuGitMerge size={16} /> Merge
+        <button 
+          className="flex items-center gap-1 rounded-md bg-gray-700 hover:bg-gray-600 py-2 px-3 text-white flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={mergeBranches}
+          disabled={mergeInProgress}
+        >
+          <LuGitMerge size={16} /> 
+          {mergeInProgress ? `Merging ${selectedBranchForMerge}...` : "Merge"}
         </button>
       </div>
     </div>

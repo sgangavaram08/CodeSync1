@@ -17,7 +17,7 @@ enum SocketEvent {
     FILE_UPDATED = "file-updated",
     FILE_RENAMED = "file-renamed",
     FILE_DELETED = "file-deleted",
-    USER_OFFLINE = "offline",
+    USER_OFFLINE = "user-offline",
     USER_ONLINE = "online",
     SEND_MESSAGE = "send-message",
     RECEIVE_MESSAGE = "receive-message",
@@ -27,7 +27,15 @@ enum SocketEvent {
     REQUEST_DRAWING = "request-drawing",
     SYNC_DRAWING = "sync-drawing",
     DRAWING_UPDATE = "drawing-update",
-    FILE_LOCK_TOGGLED = "file-lock-toggled"
+    FILE_LOCK_TOGGLED = "file-lock-toggled",
+    GENERATE_TEST = "generate-test",
+    TEST_GENERATED = "test-generated",
+    COMMIT_CHANGES = "commit-changes",
+    COMMIT_CREATED = "commit-created",
+    BRANCH_CREATED = "branch-created",
+    BRANCH_SWITCHED = "branch-switched",
+    PULL_CODE = "pull-code",
+    MERGE_BRANCHES = "merge-branches"
 }
 
 interface SocketContext {

@@ -4,7 +4,7 @@ import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
 import useResponsive from "@/hooks/useResponsive"
 import { SocketEvent } from "@/types/socket"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
 import { LuCheck, LuCopy, LuFolderPlus } from "react-icons/lu"
 import ReactMarkdown from "react-markdown"
@@ -19,6 +19,36 @@ function TestGeneratorView() {
     const [testOutput, setTestOutput] = useState("")
     const [testFramework, setTestFramework] = useState("jest")
     const [isGenerating, setIsGenerating] = useState(false)
+    const [testsDirectoryId, setTestsDirectoryId] = useState<string | null>(null)
+
+    // Find or create Tests directory on component mount
+    useEffect(() => {
+        const findTestsDirectory = () => {
+            // Check if Tests directory already exists at the root
+            const testsDir = fileStructure.children?.find(item => item.type === "directory" && item.name === "Tests");
+            
+            if (testsDir) {
+                setTestsDirectoryId(testsDir.id);
+            } else if (fileStructure.id) {
+                // If it doesn't exist, create it
+                const newDirId = createDirectory(fileStructure.id, "Tests");
+                setTestsDirectoryId(newDirId);
+                
+                // Notify other clients about the new directory
+                if (socket && newDirId) {
+                    const newDirectory = fileStructure.children?.find(item => item.id === newDirId);
+                    socket.emit(SocketEvent.DIRECTORY_CREATED, {
+                        parentDirId: fileStructure.id,
+                        newDirectory
+                    });
+                }
+            }
+        };
+        
+        if (fileStructure && fileStructure.children) {
+            findTestsDirectory();
+        }
+    }, [fileStructure, createDirectory, socket]);
 
     // Generate test cases for the active file
     const generateTestCases = async () => {
@@ -59,8 +89,14 @@ function TestGeneratorView() {
                 setTestOutput(`\`\`\`${testFramework === "jest" ? "javascript" : testFramework}\n${testCode}\n\`\`\``)
                 toast.success("Test cases generated successfully")
                 
-                // Automatically create the test file in a Tests directory
+                // Automatically create the test file in the Tests directory
                 generateTestFile(testCode);
+                
+                // Emit test generated event
+                socket.emit(SocketEvent.TEST_GENERATED, {
+                    fileName: activeFile.name,
+                    testCode
+                });
             }
         } catch (error) {
             console.error("Error generating test cases:", error)
@@ -71,27 +107,10 @@ function TestGeneratorView() {
         }
     }
 
-    // Find or create Tests directory
-    const getOrCreateTestsDirectory = () => {
-        // Check if Tests directory already exists at the root
-        let testsDir = fileStructure.children?.find(item => item.type === "directory" && item.name === "Tests");
-        
-        // If it doesn't exist, create it
-        if (!testsDir) {
-            const testsDirId = createDirectory(fileStructure.id, "Tests");
-            testsDir = fileStructure.children?.find(item => item.id === testsDirId);
-        }
-        
-        return testsDir;
-    }
-
     // Create a test file from the generated output
     const generateTestFile = (testCode) => {
-        if (!activeFile) return;
-
-        const testsDir = getOrCreateTestsDirectory();
-        if (!testsDir) {
-            toast.error("Could not create Tests directory");
+        if (!activeFile || !testsDirectoryId) {
+            toast.error("Could not create test file - active file or Tests directory not found");
             return;
         }
 
@@ -100,23 +119,30 @@ function TestGeneratorView() {
         const extension = testFramework === "pytest" ? ".py" : ".test.js";
         const testFileName = `${baseName}${extension}`;
         
-        // Create a new test file
-        const fileId = createFile(testsDir.id, testFileName);
-        
-        // Update the file content
-        const cleanTestCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
-        updateFileContent(fileId, cleanTestCode);
+        try {
+            // Create a new test file
+            const fileId = createFile(testsDirectoryId, testFileName);
+            
+            // Update the file content - clean the markdown formatting
+            const cleanTestCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
+            updateFileContent(fileId, cleanTestCode);
 
-        // Emit file created event
-        socket.emit(SocketEvent.FILE_CREATED, {
-            id: fileId,
-            name: testFileName, 
-            parentId: testsDir.id,
-            type: "file",
-            content: cleanTestCode
-        });
-        
-        toast.success(`Test file ${testFileName} created in Tests folder`);
+            // Emit file created event
+            socket.emit(SocketEvent.FILE_CREATED, {
+                parentDirId: testsDirectoryId,
+                newFile: {
+                    id: fileId,
+                    name: testFileName, 
+                    type: "file",
+                    content: cleanTestCode
+                }
+            });
+            
+            toast.success(`Test file ${testFileName} created in Tests folder`);
+        } catch (error) {
+            console.error("Error creating test file:", error);
+            toast.error("Failed to create test file");
+        }
     }
 
     // Copy test output to clipboard

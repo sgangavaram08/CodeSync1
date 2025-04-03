@@ -72,7 +72,7 @@ function CopilotView() {
             toast.error("Please open a file first to generate tests")
             return;
         }
-        setActiveView(VIEWS.VERSION_CONTROL);
+        setActiveView(VIEWS.TEST_GENERATOR);
         toast.success("Switched to test generator view");
     }
 
@@ -135,10 +135,9 @@ function CopilotView() {
             <div className="h-full rounded-lg w-full overflow-y-auto p-0">
                 <ReactMarkdown
                     components={{
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        code({ inline, className, children, ...props }: any) {
+                        code({ inline, className, children, ...props }) {
                             const match = /language-(\w+)/.exec(className || "")
-                            const language = match ? match[1] : "javascript" // Default to JS
+                            const language = match ? match[1] : "javascript" 
 
                             return !inline ? (
                                 <SyntaxHighlighter

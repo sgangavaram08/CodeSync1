@@ -53,5 +53,7 @@ export enum SocketEvent {
   COMMIT_CHANGES = "commit-changes",
   COMMIT_CREATED = "commit-created",
   BRANCH_CREATED = "branch-created",
-  BRANCH_SWITCHED = "branch-switched"
+  BRANCH_SWITCHED = "branch-switched",
+  PULL_CODE = "pull-code",
+  MERGE_BRANCHES = "merge-branches"
 }

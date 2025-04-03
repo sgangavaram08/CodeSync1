@@ -460,6 +460,95 @@ io.on("connection", (socket) => {
       snapshot,
     });
   });
+
+  // Handle test generation
+  socket.on(SocketEvent.GENERATE_TEST, ({ fileName, fileContent, framework }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    
+    // In a real implementation, this would use an API to generate tests
+    // For this example, we'll just emit a success event with sample code
+    const testCode = `// Generated test for ${fileName}\n// Using ${framework}\n\ndescribe('${fileName}', () => {\n  it('should work correctly', () => {\n    expect(true).toBe(true);\n  });\n});`;
+    
+    io.to(socket.id).emit(SocketEvent.TEST_GENERATED, {
+      fileName,
+      testCode,
+      framework
+    });
+  });
+  
+  // Handle version control actions
+  socket.on(SocketEvent.COMMIT_CHANGES, ({ message, files }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Create a commit object
+    const commit = {
+      id: `c${Date.now().toString(16)}`,
+      message,
+      author: user.username,
+      timestamp: new Date().toISOString(),
+      files: files.length
+    };
+    
+    // Broadcast to all users in the room
+    io.to(roomId).emit(SocketEvent.COMMIT_CREATED, commit);
+  });
+  
+  socket.on(SocketEvent.BRANCH_CREATED, ({ name }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Broadcast to all users in the room
+    io.to(roomId).emit(SocketEvent.BRANCH_CREATED, {
+      name,
+      by: user.username
+    });
+  });
+  
+  socket.on(SocketEvent.BRANCH_SWITCHED, ({ name }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Broadcast to all users in the room
+    io.to(roomId).emit(SocketEvent.BRANCH_SWITCHED, {
+      name,
+      by: user.username
+    });
+  });
+  
+  socket.on(SocketEvent.PULL_CODE, ({ branch }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Broadcast to all users in the room
+    io.to(roomId).emit(SocketEvent.PULL_CODE, {
+      branch,
+      by: user.username
+    });
+  });
+  
+  socket.on(SocketEvent.MERGE_BRANCHES, ({ from, to }) => {
+    const roomId = getRoomId(socket.id);
+    if (!roomId) return;
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Broadcast to all users in the room
+    io.to(roomId).emit(SocketEvent.MERGE_BRANCHES, {
+      from,
+      to,
+      by: user.username
+    });
+  });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,3 +1,4 @@
+
 import express, { Response, Request } from "express";
 import dotenv from "dotenv";
 import http from "http";
@@ -97,7 +98,7 @@ app.post("/create-or-update-room", async (req: Request, res: Response) => {
       if (existingRoom.users && existingRoom.users.includes(username)) {
         return res.json({
           message: "User already in users list",
-          data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
+          data: { user: username, roomId: roomId, type: "user" },
         });
       }
 
@@ -109,7 +110,7 @@ app.post("/create-or-update-room", async (req: Request, res: Response) => {
       await existingRoom.save();
       res.json({
         message: "User added to room successfully",
-        data: { user: username, roomId: roomId, type: "user", lock: existingRoom.lock },
+        data: { user: username, roomId: roomId, type: "user" },
       });
     } else {
       // If room does not exist, create a new room with the provided username in both username field and users array
@@ -117,14 +118,13 @@ app.post("/create-or-update-room", async (req: Request, res: Response) => {
         roomId,
         username,
         users: [username],
-        lock: false
       };
       
       const newRoom = await Room.save(roomData);
       
       res.json({
         message: "Room created successfully",
-        data: { user: username, roomId: roomId, type: "admin", lock: false },
+        data: { user: username, roomId: roomId, type: "admin" },
       });
     }
   } catch (error) {
@@ -133,45 +133,22 @@ app.post("/create-or-update-room", async (req: Request, res: Response) => {
   }
 });
 
-//lock feature
-app.post("/set-lock", async (req: Request, res: Response) => {
-  try {
-    const { roomId, lock } = req.body;
-    console.log("Set lock request:", roomId, lock);
-    // Find the room and update the lock value
-    const room = await Room.findOneAndUpdate(
-      { roomId },
-      { lock }, 
-      { new: true }
-    );
-
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    res.json({ message: "Lock updated successfully" });
-  } catch (error) {
-    console.error("Set lock error:", error);
-    res.status(500).json({ message: "Failed to update lock" });
-  }
-});
-
-//get lock value 
+// Get room info
 app.get('/lock', async (req: Request, res: Response) => {
   try {
     const roomId = req.query.roomId as string;
-    console.log("Get lock request for roomId:", roomId);
+    console.log("Get room info for roomId:", roomId);
 
-    // Use roomId to fetch the lock value
+    // Use roomId to fetch the room information
     const room = await Room.findOne({ roomId });
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-    res.json({ lock: room.lock, admin: room.username });
+    res.json({ admin: room.username });
   } catch (error) {
-    console.error("Get lock error:", error);
-    res.status(500).json({ message: 'Failed to get lock value' });
+    console.error("Get room info error:", error);
+    res.status(500).json({ message: 'Failed to get room info' });
   }
 });
 
@@ -213,6 +190,41 @@ function getUserBySocketId(socketId: SocketId): UserType | null {
   return user;
 }
 
+// Function to unlock files when a user leaves
+function unlockUserFiles(username: string, roomId: string): void {
+  // Emit an event to unlock all files locked by this user
+  io.to(roomId).emit(SocketEvent.USER_LEFT_UNLOCK_FILES, { username });
+}
+
+// Function to remove user from room
+function removeUserFromRoom(admin: string, targetUsername: string, roomId: string): void {
+  // Find the user to remove
+  const userToRemove = userSocketMap.find(user => 
+    user.roomId === roomId && user.username === targetUsername
+  );
+  
+  if (userToRemove) {
+    // Emit an event to the user being removed
+    io.to(userToRemove.socketId).emit(SocketEvent.REMOVED_FROM_ROOM, { 
+      by: admin 
+    });
+    
+    // Unlock all files locked by this user
+    unlockUserFiles(targetUsername, roomId);
+    
+    // Remove user from socket map
+    userSocketMap = userSocketMap.filter(user => 
+      !(user.roomId === roomId && user.username === targetUsername)
+    );
+    
+    // Notify other users in the room
+    io.to(roomId).emit(SocketEvent.USER_REMOVED, { 
+      username: targetUsername, 
+      by: admin 
+    });
+  }
+}
+
 io.on("connection", (socket) => {
   // Handle user actions
   socket.on(SocketEvent.JOIN_REQUEST, ({ roomId, username }) => {
@@ -245,6 +257,10 @@ io.on("connection", (socket) => {
     const user = getUserBySocketId(socket.id);
     if (!user) return;
     const roomId = user.roomId;
+    
+    // Unlock files when user leaves
+    unlockUserFiles(user.username, roomId);
+    
     socket.broadcast.to(roomId).emit(SocketEvent.USER_DISCONNECTED, { user });
     userSocketMap = userSocketMap.filter((u) => u.socketId !== socket.id);
     socket.leave(roomId);
@@ -336,6 +352,32 @@ io.on("connection", (socket) => {
       username, 
       isLocked 
     });
+  });
+
+  // Handle user removal
+  socket.on(SocketEvent.REMOVE_USER, ({ targetUsername }) => {
+    const user = getUserBySocketId(socket.id);
+    if (!user) return;
+    
+    // Only room admin can remove users
+    const roomId = user.roomId;
+    
+    // Check if user is admin
+    Room.findOne({ roomId })
+      .then(room => {
+        if (room && room.username === user.username) {
+          // This user is the admin, proceed with removal
+          removeUserFromRoom(user.username, targetUsername, roomId);
+        } else {
+          // Not admin, send error
+          io.to(socket.id).emit(SocketEvent.ERROR, { 
+            message: "Only room admin can remove users" 
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Error checking admin status:", error);
+      });
   });
 
   // Handle user status

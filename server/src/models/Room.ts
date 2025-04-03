@@ -7,7 +7,6 @@ export interface RoomData {
   room_id: string;
   username?: string;
   users: string[];
-  lock: boolean;
 }
 
 // Room model with methods to interact with Supabase
@@ -38,8 +37,7 @@ const Room = {
           const { data: updatedData, error: updateError } = await supabase
             .from('rooms')
             .update({
-              users: this.users,
-              lock: this.lock
+              users: this.users
             })
             .eq('room_id', this.room_id)
             .select()
@@ -63,13 +61,13 @@ const Room = {
   
   async findOneAndUpdate(
     query: { roomId: string },
-    update: { lock: boolean },
+    update: any,
     options?: { new: boolean }
   ): Promise<RoomData | null> {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .update({ lock: update.lock })
+        .update(update)
         .eq('room_id', query.roomId)
         .select()
         .single();
@@ -90,7 +88,6 @@ const Room = {
     roomId: string; 
     username?: string; 
     users: string[];
-    lock?: boolean;
   }): Promise<RoomData | null> {
     try {
       const { data, error } = await supabase
@@ -98,8 +95,7 @@ const Room = {
         .insert({
           room_id: roomData.roomId,
           username: roomData.username,
-          users: roomData.users,
-          lock: roomData.lock || false
+          users: roomData.users
         })
         .select()
         .single();

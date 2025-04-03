@@ -1,3 +1,4 @@
+
 import { useCopilot } from "@/context/CopilotContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
@@ -5,7 +6,7 @@ import useResponsive from "@/hooks/useResponsive"
 import { SocketEvent } from "@/types/socket"
 import { useState } from "react"
 import toast from "react-hot-toast"
-import { LuClipboardCheck, LuCopy } from "react-icons/lu"
+import { LuCheck, LuCopy, LuFolderPlus } from "react-icons/lu"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
@@ -13,8 +14,8 @@ import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
 function TestGeneratorView() {
     const { viewHeight } = useResponsive()
     const { socket } = useSocket()
-    const { activeFile, updateFileContent, setActiveFile } = useFileSystem()
-    const { generateCode, isRunning } = useCopilot()
+    const { activeFile, fileStructure, updateFileContent, setActiveFile, createDirectory, createFile } = useFileSystem()
+    const { isRunning } = useCopilot()
     const [testOutput, setTestOutput] = useState("")
     const [testFramework, setTestFramework] = useState("jest")
     const [isGenerating, setIsGenerating] = useState(false)
@@ -32,7 +33,6 @@ function TestGeneratorView() {
             const prompt = `Generate ${testFramework} test cases for the following code. Include detailed test cases for edge cases, normal cases, and error handling. Return only the test code without explanations:\n\n${activeFile.content}`
             
             // Use the copilot context to generate tests
-            // Mock fetch call for this example - in a real implementation, we would use generateCode
             const response = await fetch("https://api.pollinations.ai/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -58,6 +58,9 @@ function TestGeneratorView() {
                 const testCode = data.choices?.[0]?.message?.content || "// No tests generated"
                 setTestOutput(`\`\`\`${testFramework === "jest" ? "javascript" : testFramework}\n${testCode}\n\`\`\``)
                 toast.success("Test cases generated successfully")
+                
+                // Automatically create the test file in a Tests directory
+                generateTestFile(testCode);
             }
         } catch (error) {
             console.error("Error generating test cases:", error)
@@ -68,26 +71,52 @@ function TestGeneratorView() {
         }
     }
 
+    // Find or create Tests directory
+    const getOrCreateTestsDirectory = () => {
+        // Check if Tests directory already exists at the root
+        let testsDir = fileStructure.children?.find(item => item.type === "directory" && item.name === "Tests");
+        
+        // If it doesn't exist, create it
+        if (!testsDir) {
+            const testsDirId = createDirectory(fileStructure.id, "Tests");
+            testsDir = fileStructure.children?.find(item => item.id === testsDirId);
+        }
+        
+        return testsDir;
+    }
+
     // Create a test file from the generated output
-    const createTestFile = () => {
-        if (!activeFile || !testOutput) return
+    const generateTestFile = (testCode) => {
+        if (!activeFile) return;
 
-        const { name, parentId } = activeFile
-        const baseName = name.split(".")[0]
-        const extension = testFramework === "pytest" ? ".py" : ".test.js"
-        const testFileName = `${baseName}${extension}`
-        const testContent = testOutput.replace(/```[\w]*\n?/g, "").trim()
-
-        // Create a new test file
-        const newTestFile = {
-            type: "file",
-            name: testFileName,
-            parentId,
-            content: testContent,
+        const testsDir = getOrCreateTestsDirectory();
+        if (!testsDir) {
+            toast.error("Could not create Tests directory");
+            return;
         }
 
-        socket.emit(SocketEvent.FILE_CREATED, newTestFile)
-        toast.success(`Test file ${testFileName} created`)
+        const { name } = activeFile;
+        const baseName = name.split(".")[0];
+        const extension = testFramework === "pytest" ? ".py" : ".test.js";
+        const testFileName = `${baseName}${extension}`;
+        
+        // Create a new test file
+        const fileId = createFile(testsDir.id, testFileName);
+        
+        // Update the file content
+        const cleanTestCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
+        updateFileContent(fileId, cleanTestCode);
+
+        // Emit file created event
+        socket.emit(SocketEvent.FILE_CREATED, {
+            id: fileId,
+            name: testFileName, 
+            parentId: testsDir.id,
+            type: "file",
+            content: cleanTestCode
+        });
+        
+        toast.success(`Test file ${testFileName} created in Tests folder`);
     }
 
     // Copy test output to clipboard
@@ -100,6 +129,16 @@ function TestGeneratorView() {
             toast.error("Unable to copy test code")
             console.error(error)
         }
+    }
+
+    // Create test file manually if needed
+    const createTestFile = () => {
+        if (!activeFile || !testOutput) {
+            toast.error("No test output or active file");
+            return;
+        }
+
+        generateTestFile(testOutput.replace(/```[\w]*\n?/g, "").trim());
     }
 
     return (
@@ -137,8 +176,8 @@ function TestGeneratorView() {
                     <button title="Copy Test Code" onClick={copyTestOutput}>
                         <LuCopy size={18} className="cursor-pointer text-white" />
                     </button>
-                    <button title="Create Test File" onClick={createTestFile}>
-                        <LuClipboardCheck size={18} className="cursor-pointer text-white" />
+                    <button title="Create Test File Manually" onClick={createTestFile}>
+                        <LuFolderPlus size={18} className="cursor-pointer text-white" />
                     </button>
                 </div>
             )}

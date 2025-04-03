@@ -1,3 +1,4 @@
+
 import SidebarButton from "@/components/sidebar/sidebar-views/SidebarButton"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
@@ -9,6 +10,7 @@ import { SocketEvent } from "@/types/socket"
 import { VIEWS } from "@/types/view"
 import { IoCodeSlash } from "react-icons/io5"
 import { MdOutlineDraw } from "react-icons/md"
+import { LuTestTube } from "react-icons/lu"
 import cn from "classnames"
 import { Tooltip } from 'react-tooltip'
 import { useState } from 'react'
@@ -67,6 +69,10 @@ function Sidebar() {
                 <SidebarButton
                     viewName={VIEWS.RUN}
                     icon={viewIcons[VIEWS.RUN]}
+                />
+                <SidebarButton
+                    viewName={VIEWS.VERSION_CONTROL}
+                    icon={viewIcons[VIEWS.VERSION_CONTROL]}
                 />
                 <SidebarButton
                     viewName={VIEWS.CLIENTS}

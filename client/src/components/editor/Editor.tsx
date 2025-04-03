@@ -178,11 +178,19 @@ function Editor() {
 
     return (
         <>
-            <div className="relative">
-                {/* File lock toggle button - available for all users */}
-                {activeFile && (
+            {/* File lock status indicator when locked by others */}
+            {isFileLockedByOthers && (
+                <div className="absolute top-1 left-2 z-10 flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 font-medium text-white">
+                    <span><FaLock /></span>
+                    <span>Locked by {activeFile.lockedBy}</span>
+                </div>
+            )}
+
+            {/* File lock toggle button - moved to the right side */}
+            {activeFile && (
+                <div className="absolute top-1 right-4 z-10">
                     <button 
-                        className="absolute bottom-1 right-32 z-10 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
+                        className="flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 font-medium text-white shadow-lg transition-all hover:animate-pulse hover:shadow-xl active:scale-95"
                         onClick={handleToggleFileLock}
                         disabled={isFileLockedByOthers}
                         title={isFileLockedByOthers ? `Locked by ${activeFile.lockedBy}` : activeFile.isLocked ? "Unlock this file" : "Lock this file"}
@@ -190,16 +198,9 @@ function Editor() {
                         <span>{activeFile.isLocked ? <FaLock /> : <FaLockOpen />}</span>
                         <span>{activeFile.isLocked ? "Unlock File" : "Lock File"}</span>
                     </button>
-                )}
-                
-                {/* File lock status indicator when locked by others */}
-                {isFileLockedByOthers && (
-                    <div className="absolute bottom-1 left-2 z-10 flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 font-medium text-white">
-                        <span><FaLock /></span>
-                        <span>Locked by {activeFile.lockedBy}</span>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
+
             {msg && Type == "user" && showPopup && (
                 <div className="absolute bottom-20 right-7 z-50">
                     <div id={msg.includes("Locked") ? "animatedButton" : "animatedButtonn"} className="rounded-lg p-4 shadow-md backdrop-blur-md backdrop-brightness-125 backdrop-filter">

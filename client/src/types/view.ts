@@ -8,7 +8,8 @@ export enum VIEWS {
     CHATS = "Chats",
     COPILOT = "Copilot",
     RUN = "Run",
-    VERSION_CONTROL = "Version Control"
+    VERSION_CONTROL = "Version Control",
+    TEST_GENERATOR = "Test Generator"
 }
 
 export type ViewContext = {

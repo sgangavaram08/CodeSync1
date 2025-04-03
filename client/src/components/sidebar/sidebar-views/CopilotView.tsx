@@ -1,10 +1,13 @@
+
 import { useCopilot } from "@/context/CopilotContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
+import { useViews } from "@/context/ViewContext" 
 import useResponsive from "@/hooks/useResponsive"
 import { SocketEvent } from "@/types/socket"
+import { VIEWS } from "@/types/view"
 import toast from "react-hot-toast"
-import { LuClipboardPaste, LuCopy, LuRepeat } from "react-icons/lu"
+import { LuClipboardPaste, LuCopy, LuRepeat, LuTestTube } from "react-icons/lu"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
@@ -14,6 +17,7 @@ function CopilotView() {
     const { viewHeight } = useResponsive()
     const { generateCode, output, isRunning, setInput } = useCopilot()
     const { activeFile, updateFileContent, setActiveFile } = useFileSystem()
+    const { setActiveView } = useViews()
 
     const copyOutput = async () => {
         try {
@@ -62,6 +66,15 @@ function CopilotView() {
             })
         }
     }
+    
+    const goToTestGenerator = () => {
+        if (!activeFile) {
+            toast.error("Please open a file first to generate tests")
+            return;
+        }
+        setActiveView(VIEWS.VERSION_CONTROL);
+        toast.success("Switched to test generator view");
+    }
 
     return (
         <div
@@ -74,13 +87,23 @@ function CopilotView() {
                 placeholder="What code do you want to generate?"
                 onChange={(e) => setInput(e.target.value)}
             />
-            <button
-                className="mt-1 flex w-full justify-center rounded-md bg-primary p-2 font-bold text-black outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={generateCode}
-                disabled={isRunning}
-            >
-                {isRunning ? "Generating..." : "Generate Code"}
-            </button>
+            <div className="flex gap-2">
+                <button
+                    className="mt-1 flex flex-grow justify-center rounded-md bg-primary p-2 font-bold text-black outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={generateCode}
+                    disabled={isRunning}
+                >
+                    {isRunning ? "Generating..." : "Generate Code"}
+                </button>
+                
+                <button
+                    className="mt-1 flex justify-center rounded-md bg-emerald-600 p-2 font-bold text-white outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={goToTestGenerator}
+                    title="Generate test cases for current file"
+                >
+                    <LuTestTube size={20} />
+                </button>
+            </div>
             {output && (
                 <div className="flex justify-end gap-4 pt-2">
                     <button title="Copy Output" onClick={copyOutput}>

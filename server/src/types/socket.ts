@@ -43,5 +43,15 @@ export enum SocketEvent {
   // Drawing events
   REQUEST_DRAWING = "request-drawing",
   SYNC_DRAWING = "sync-drawing",
-  DRAWING_UPDATE = "drawing-update"
+  DRAWING_UPDATE = "drawing-update",
+  
+  // Test generation events
+  GENERATE_TEST = "generate-test",
+  TEST_GENERATED = "test-generated",
+  
+  // Version control events
+  COMMIT_CHANGES = "commit-changes",
+  COMMIT_CREATED = "commit-created",
+  BRANCH_CREATED = "branch-created",
+  BRANCH_SWITCHED = "branch-switched"
 }

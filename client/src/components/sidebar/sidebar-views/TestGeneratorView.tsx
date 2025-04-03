@@ -101,7 +101,7 @@ function TestGeneratorView() {
                 toast.success("Test cases generated successfully")
                 
                 // Create the test file in the Tests directory
-                createTestFile(testCode);
+                createFileFromCode(testCode);
                 
                 // Emit test generated event
                 socket.emit(SocketEvent.TEST_GENERATED, {
@@ -121,7 +121,7 @@ function TestGeneratorView() {
     }
 
     // Create a test file from the generated output
-    const createTestFile = (testCode) => {
+    const createFileFromCode = (testCode) => {
         if (!activeFile || !testsDirectoryId) {
             toast.error("Could not create test file - active file or Tests directory not found");
             return;
@@ -178,7 +178,7 @@ function TestGeneratorView() {
         }
     }
 
-    // Create test file manually if needed
+    // Create test file manually from the output
     const createTestFile = () => {
         if (!activeFile || !testOutput) {
             toast.error("No test output or active file");
@@ -186,7 +186,7 @@ function TestGeneratorView() {
         }
 
         const cleanCode = testOutput.replace(/```[\w]*\n?/g, "").trim();
-        createTestFile(cleanCode);
+        createFileFromCode(cleanCode);
     }
 
     return (

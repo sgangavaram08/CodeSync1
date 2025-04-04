@@ -1,6 +1,6 @@
 import { ICopilotContext } from "@/types/copilot"
 import { createContext, ReactNode, useContext, useState } from "react"
-import toast from "react-hot-toast"
+import { toast } from "react-hot-toast"
 import axiosInstance from "../api/pollinationsApi"
 
 const CopilotContext = createContext<ICopilotContext | null>(null)

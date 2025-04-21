@@ -25,8 +25,8 @@ function SettingsView() {
 
     // Add C++ to language names if not already present
     const extendedLangNames = useMemo(() => {
-        if (!langNames.includes("cpp") && !langNames.includes("C++")) {
-            return [...langNames, "cpp", "C++"];
+        if (!langNames.includes("cpp")) {
+            return [...langNames, "cpp"];
         }
         return langNames;
     }, []);
@@ -97,7 +97,7 @@ function SettingsView() {
                 title="Language"
             />
             {/* Show GitHub corner option */}
-            {/* <div className="mt-4 flex w-full items-center justify-between">
+            <div className="mt-4 flex w-full items-center justify-between">
                 <label>Show github corner</label>
                 <label className="relative inline-flex cursor-pointer items-center">
                     <input
@@ -108,7 +108,7 @@ function SettingsView() {
                     />
                     <div className="peer h-6 w-12 rounded-full bg-darkHover outline-none duration-100 after:absolute after:left-1 after:top-1 after:flex after:h-4 after:w-4 after:items-center after:justify-center after:rounded-full after:bg-white after:font-bold after:outline-none after:duration-500 peer-checked:after:translate-x-6 peer-checked:after:border-white peer-focus:outline-none"></div>
                 </label>
-            </div> */}
+            </div>
             <button
                 className="mt-auto w-full rounded-md border-none bg-darkHover px-4 py-2 text-white outline-none"
                 onClick={resetSettings}

@@ -1,4 +1,4 @@
-import { useAppContext } from "@/context/AppContext"
+// import { useAppContext } from "@/context/AppContext"
 import axios from "axios"
 import { useState } from "react"
 import illustration from "@/assets/illustration.svg";

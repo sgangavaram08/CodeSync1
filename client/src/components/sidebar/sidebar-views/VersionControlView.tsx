@@ -22,8 +22,8 @@ function VersionControlView() {
     { name: "feature/user-auth", current: false },
   ]);
 
-  const [commits, setCommits] = useState([]);
-  const [changedFiles, setChangedFiles] = useState([]);
+  const [commits, setCommits] = useState<{ id: string; message: string; author: string; timestamp: string; files: number }[]>([]);
+  const [changedFiles, setChangedFiles] = useState<{ id: string; name: string; status: string; changes: number }[]>([]);
   const [commitMessage, setCommitMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [mergeInProgress, setMergeInProgress] = useState(false);
@@ -112,10 +112,10 @@ function VersionControlView() {
   }, [socket, currentUser.username]);
 
   // Format date for display
-  const formatDate = (isoString) => {
+  const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     const now = new Date();
-    const diffInHours = (now - date) / 1000 / 60 / 60;
+    const diffInHours = (now.getTime() - date.getTime()) / 1000 / 60 / 60;
     
     if (diffInHours < 1) {
       return `${Math.floor(diffInHours * 60)} minutes ago`;
@@ -188,7 +188,7 @@ function VersionControlView() {
   };
 
   // Switch to a different branch
-  const switchBranch = (branchName) => {
+  const switchBranch = (branchName: string) => {
     setBranches(prevBranches => 
       prevBranches.map(branch => ({
         ...branch,
@@ -228,7 +228,7 @@ function VersionControlView() {
       // Update file structure randomly as example
       if (fileStructure && fileStructure.children && fileStructure.children.length > 0) {
         // Select a random file
-        const randomFileIndex = Math.floor(Math.random() * fileStructure.children.length);
+        // Removed unused variable 'randomFileIndex'
         const randomFile = fileStructure.children.find(item => item.type === "file");
         
         if (randomFile && randomFile.content) {

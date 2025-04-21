@@ -4,7 +4,7 @@ import { useSocket } from "@/context/SocketContext"
 import { SocketEvent } from "@/types/socket"
 import { USER_STATUS } from "@/types/user"
 import axios from "axios"
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
+import { ChangeEvent, FormEvent, useEffect, useRef } from "react"
 import { toast } from "react-hot-toast"
 import { useLocation, useNavigate } from "react-router-dom"
 import { v4 as uuidv4 } from "uuid"
@@ -14,9 +14,7 @@ const FormComponent = () => {
     const location = useLocation()
     const { currentUser, setCurrentUser, status, setStatus } = useAppContext()
     const { socket } = useSocket()
-    const [currentlocal, setcurrentlocal] = useState<string>(
-        localStorage.getItem("username") || "",
-    )
+    const currentlocal = localStorage.getItem("username") || "";
     console.log("Current username from localStorage:", currentlocal);
     
 

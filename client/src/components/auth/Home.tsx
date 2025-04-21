@@ -108,7 +108,7 @@ const Home = () => {
                 <div className="relative z-10 flex min-h-screen items-center justify-center bg-transparent text-white">
                     <div className="px-4 text-center md:px-12">
                         <h1 className="mb-4 text-4xl font-bold text-green-500 md:text-6xl">
-                            Welcome to Code Sync
+                            Welcome to CogniShare
                         </h1>
                         <p className="mb-6 text-lg text-gray-400 md:text-xl">
                             Stay in sync with your code and collaborate

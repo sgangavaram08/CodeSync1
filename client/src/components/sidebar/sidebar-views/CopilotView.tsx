@@ -81,7 +81,7 @@ function CopilotView() {
             className="flex max-h-full min-h-[400px] w-full flex-col gap-2 p-4"
             style={{ height: viewHeight }}
         >
-            <h1 className="view-title">Copilot</h1>
+            <h1 className="view-title">CognIQ</h1>
             <textarea
                 className="min-h-[120px] w-full rounded-md border-none bg-darkHover p-2 text-white outline-none"
                 placeholder="What code do you want to generate?"
@@ -135,7 +135,7 @@ function CopilotView() {
             <div className="h-full rounded-lg w-full overflow-y-auto p-0">
                 <ReactMarkdown
                     components={{
-                        code({ inline, className, children, ...props }) {
+                        code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
                             const match = /language-(\w+)/.exec(className || "")
                             const language = match ? match[1] : "javascript" 
 

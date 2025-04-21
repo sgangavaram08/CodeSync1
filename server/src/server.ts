@@ -1,4 +1,3 @@
-
 import express, { Response, Request } from "express";
 import dotenv from "dotenv";
 import http from "http";
@@ -155,10 +154,20 @@ app.get('/lock', async (req: Request, res: Response) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://codesyncserver.vercel.app", // Allow requests from the client
+    methods: ["GET", "POST"],
+    credentials: true,
   },
   maxHttpBufferSize: 1e8,
   pingTimeout: 60000,
+});
+
+io.on("connection", (socket) => {
+  console.log("A client connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("A client disconnected:", socket.id);
+  });
 });
 
 let userSocketMap: UserType[] = [];

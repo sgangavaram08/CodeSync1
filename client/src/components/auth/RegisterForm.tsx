@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import illustration from "@/assets/illustration.svg";
-import FormComponent from "@/components/forms/FormComponent";
+// import FormComponent from "@/components/forms/FormComponent";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -26,7 +26,7 @@ function RegisterPage() {
             // Send POST request to the backend route using axios
 
             const response = await axios.post(
-                `http://127.0.0.1:3000/register`,
+                `http://127.0.0.1:3001/register`,
                 {
                     username,
                     mobile,

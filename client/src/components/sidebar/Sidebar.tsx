@@ -10,7 +10,7 @@ import { SocketEvent } from "@/types/socket"
 import { VIEWS } from "@/types/view"
 import { IoCodeSlash } from "react-icons/io5"
 import { MdOutlineDraw } from "react-icons/md"
-import { LuTestTube } from "react-icons/lu"
+// import { LuTestTube } from "react-icons/lu"
 import cn from "classnames"
 import { Tooltip } from 'react-tooltip'
 import { useState } from 'react'
@@ -56,31 +56,31 @@ function Sidebar() {
             >
                 <SidebarButton
                     viewName={VIEWS.FILES}
-                    icon={viewIcons[VIEWS.FILES]}
+                    icon={viewIcons[VIEWS.FILES] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.CHATS}
-                    icon={viewIcons[VIEWS.CHATS]}
+                    icon={viewIcons[VIEWS.CHATS] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.COPILOT}
-                    icon={viewIcons[VIEWS.COPILOT]}
+                    icon={viewIcons[VIEWS.COPILOT] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.RUN}
-                    icon={viewIcons[VIEWS.RUN]}
+                    icon={viewIcons[VIEWS.RUN] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.VERSION_CONTROL}
-                    icon={viewIcons[VIEWS.VERSION_CONTROL]}
+                    icon={viewIcons[VIEWS.VERSION_CONTROL] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.CLIENTS}
-                    icon={viewIcons[VIEWS.CLIENTS]}
+                    icon={viewIcons[VIEWS.CLIENTS] as JSX.Element || <span />}
                 />
                 <SidebarButton
                     viewName={VIEWS.SETTINGS}
-                    icon={viewIcons[VIEWS.SETTINGS]}
+                    icon={viewIcons[VIEWS.SETTINGS] as JSX.Element || <span />}
                 />
 
                 {/* Button to change activity state coding or drawing */}

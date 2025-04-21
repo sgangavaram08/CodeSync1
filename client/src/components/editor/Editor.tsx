@@ -41,7 +41,7 @@ function Editor() {
     const API = import.meta.env.VITE_API_URL;
     const [showPopup, setShowPopup] = useState(false)
     const [msg, setmsg] = useState("")
-    const { users, currentUser, setCurrentUser, setUsers, status } =
+    const { users, currentUser, setCurrentUser } =
         useAppContext()
     const [Type, SetType] = useState("")
 

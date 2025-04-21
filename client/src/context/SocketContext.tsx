@@ -11,10 +11,9 @@ import {
     useCallback,
     useContext,
     useEffect,
-    useMemo,
 } from "react"
 import { toast } from "react-hot-toast"
-import { Socket, io } from "socket.io-client"
+import { io } from "socket.io-client"
 import { useAppContext } from "./AppContext"
 
 const SocketContext = createContext<SocketContextType | null>(null)
@@ -27,7 +26,22 @@ export const useSocket = (): SocketContextType => {
     return context
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"
+console.log("SocketProvider initialized")
+console.log("Socket context created")
+console.log("Socket connection established")
+console.log("Socket event listeners attached")
+const socket = io(import.meta.env.VITE_SOCKET_URL || "https://codesyncserver.vercel.app/", {
+  transports: ["websocket", "polling"], // Ensure proper transport methods
+  withCredentials: true, // Include credentials if required
+});
+
+socket.on("connect", () => {
+  console.log("Connected to Socket.IO server");
+});
+
+socket.on("connect_error", (err) => {
+  console.error("Socket connection error:", err);
+});
 
 const SocketProvider = ({ children }: { children: ReactNode }) => {
     const {
@@ -38,13 +52,6 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         drawingData,
         setDrawingData,
     } = useAppContext()
-    const socket: Socket = useMemo(
-        () =>
-            io(BACKEND_URL, {
-                reconnectionAttempts: 2,
-            }),
-        [],
-    )
 
     const handleError = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

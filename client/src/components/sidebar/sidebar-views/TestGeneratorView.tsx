@@ -1,12 +1,11 @@
 
-import { useCopilot } from "@/context/CopilotContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
 import useResponsive from "@/hooks/useResponsive"
 import { SocketEvent } from "@/types/socket"
 import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
-import { LuCheck, LuCopy, LuFolderPlus } from "react-icons/lu"
+import { LuCopy, LuFolderPlus } from "react-icons/lu"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
@@ -14,8 +13,8 @@ import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
 function TestGeneratorView() {
     const { viewHeight } = useResponsive()
     const { socket } = useSocket()
-    const { activeFile, fileStructure, updateFileContent, setActiveFile, createDirectory, createFile } = useFileSystem()
-    const { isRunning } = useCopilot()
+    const { activeFile, fileStructure, updateFileContent, createDirectory, createFile } = useFileSystem()
+    // const { isRunning } = useCopilot()
     const [testOutput, setTestOutput] = useState("")
     const [testFramework, setTestFramework] = useState("jest")
     const [isGenerating, setIsGenerating] = useState(false)
@@ -113,7 +112,8 @@ function TestGeneratorView() {
             }
         } catch (error) {
             console.error("Error generating test cases:", error)
-            toast.error(`Failed to generate test cases: ${error.message}`)
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            toast.error(`Failed to generate test cases: ${errorMessage}`)
             setTestOutput("```\n// Failed to generate test cases\n```")
         } finally {
             setIsGenerating(false)
@@ -121,7 +121,7 @@ function TestGeneratorView() {
     }
 
     // Create a test file from the generated output
-    const createFileFromCode = (testCode) => {
+    const createFileFromCode = (testCode: string) => {
         if (!activeFile || !testsDirectoryId) {
             toast.error("Could not create test file - active file or Tests directory not found");
             return;
@@ -162,7 +162,8 @@ function TestGeneratorView() {
             toast.success(`Test file ${testFileName} created in Tests folder`);
         } catch (error) {
             console.error("Error creating test file:", error);
-            toast.error(`Failed to create test file: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            toast.error(`Failed to create test file: ${errorMessage}`);
         }
     }
 
@@ -233,7 +234,7 @@ function TestGeneratorView() {
             <div className="h-full w-full overflow-y-auto rounded-lg p-0">
                 <ReactMarkdown
                     components={{
-                        code({ inline, className, children, ...props }) {
+                        code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
                             const match = /language-(\w+)/.exec(className || "")
                             const language = match ? match[1] : "javascript"
 

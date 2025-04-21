@@ -25,6 +25,8 @@ export const connectDB = async (): Promise<void> => {
       await createTables();
     } else {
       console.log('Successfully connected to Supabase');
+      // Check for version control tables
+      await createVersionControlTables();
     }
   } catch (error) {
     console.error('Error connecting to Supabase:', error);
@@ -50,7 +52,75 @@ async function createTables() {
     } else {
       console.log('Rooms table created or already exists');
     }
+    
+    // Create version control tables
+    await createVersionControlTables();
   } catch (error) {
     console.error('Error creating tables:', error);
+  }
+}
+
+// Function to create version control tables
+async function createVersionControlTables() {
+  try {
+    // Check if version_control_branches table exists
+    const { data: branchesTableExists, error: branchesCheckError } = await supabase
+      .from('version_control_branches')
+      .select('count')
+      .limit(1);
+    
+    if (branchesCheckError && branchesCheckError.code === '42P01') {
+      // Table doesn't exist, create it
+      const { error: createBranchesError } = await supabase.query(`
+        CREATE TABLE IF NOT EXISTS version_control_branches (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          room_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          is_current BOOLEAN DEFAULT false,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+      `);
+      
+      if (createBranchesError) {
+        console.error('Error creating version_control_branches table:', createBranchesError);
+      } else {
+        console.log('version_control_branches table created');
+      }
+    } else {
+      console.log('version_control_branches table already exists');
+    }
+    
+    // Check if version_control_commits table exists
+    const { data: commitsTableExists, error: commitsCheckError } = await supabase
+      .from('version_control_commits')
+      .select('count')
+      .limit(1);
+    
+    if (commitsCheckError && commitsCheckError.code === '42P01') {
+      // Table doesn't exist, create it
+      const { error: createCommitsError } = await supabase.query(`
+        CREATE TABLE IF NOT EXISTS version_control_commits (
+          id TEXT PRIMARY KEY,
+          room_id TEXT NOT NULL,
+          message TEXT NOT NULL,
+          author TEXT NOT NULL,
+          files_count INTEGER NOT NULL,
+          branch TEXT NOT NULL,
+          merge_source TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+      `);
+      
+      if (createCommitsError) {
+        console.error('Error creating version_control_commits table:', createCommitsError);
+      } else {
+        console.log('version_control_commits table created');
+      }
+    } else {
+      console.log('version_control_commits table already exists');
+    }
+  } catch (error) {
+    console.error('Error checking or creating version control tables:', error);
   }
 }

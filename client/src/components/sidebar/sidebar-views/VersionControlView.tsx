@@ -8,6 +8,7 @@ import { useSocket } from "@/context/SocketContext";
 import { useAppContext } from "@/context/AppContext";
 import { SocketEvent } from "@/types/socket";
 import toast from "react-hot-toast";
+import { supabase } from "../../../integrations/supabase/client";
 
 function VersionControlView() {
   const { viewHeight } = useResponsive();
@@ -29,6 +30,77 @@ function VersionControlView() {
   const [mergeInProgress, setMergeInProgress] = useState(false);
   const [pullInProgress, setPullInProgress] = useState(false);
   const [selectedBranchForMerge, setSelectedBranchForMerge] = useState('');
+
+  // Load branches and commits from the database when the component mounts
+  useEffect(() => {
+    if (currentUser.roomId) {
+      loadBranchesFromDatabase(currentUser.roomId);
+      loadCommitsFromDatabase(currentUser.roomId);
+    }
+  }, [currentUser.roomId]);
+
+  // Load branches from the database for the current room
+  const loadBranchesFromDatabase = async (roomId) => {
+    try {
+      const { data, error } = await supabase
+        .from('version_control_branches')
+        .select('*')
+        .eq('room_id', roomId);
+      
+      if (error) {
+        console.error('Error loading branches:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const formattedBranches = data.map(branch => ({
+          name: branch.name,
+          current: branch.is_current
+        }));
+        setBranches(formattedBranches);
+      } else {
+        // If no branches found for this room, create default branch in database
+        const defaultBranch = { name: "main", current: true };
+        await supabase.from('version_control_branches').insert({
+          room_id: roomId,
+          name: defaultBranch.name,
+          is_current: defaultBranch.current,
+          created_by: currentUser.username
+        });
+      }
+    } catch (error) {
+      console.error('Error in loadBranchesFromDatabase:', error);
+    }
+  };
+
+  // Load commits from the database for the current room
+  const loadCommitsFromDatabase = async (roomId) => {
+    try {
+      const { data, error } = await supabase
+        .from('version_control_commits')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error loading commits:', error);
+        return;
+      }
+      
+      if (data) {
+        const formattedCommits = data.map(commit => ({
+          id: commit.id,
+          message: commit.message,
+          author: commit.author,
+          timestamp: commit.created_at,
+          files: commit.files_count
+        }));
+        setCommits(formattedCommits);
+      }
+    } catch (error) {
+      console.error('Error in loadCommitsFromDatabase:', error);
+    }
+  };
 
   // Track changes for version control
   useEffect(() => {
@@ -68,49 +140,6 @@ function VersionControlView() {
     };
   }, [fileStructure, socket]);
 
-  // Load commit history (simulated)
-  useEffect(() => {
-    // Simulate loading commit history from server
-    const simulateCommitHistory = () => {
-      const mockCommits = [
-        { 
-          id: "abc123", 
-          message: "Initial commit", 
-          author: currentUser.username, 
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          files: 3
-        },
-        { 
-          id: "def456", 
-          message: "Add version control feature", 
-          author: currentUser.username, 
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          files: 5
-        },
-        { 
-          id: "ghi789", 
-          message: "Fix styling issues", 
-          author: currentUser.username, 
-          timestamp: new Date(Date.now() - 43200000).toISOString(),
-          files: 2
-        },
-      ];
-
-      setCommits(mockCommits);
-    };
-
-    simulateCommitHistory();
-
-    // Listen for real-time commit events
-    socket.on(SocketEvent.COMMIT_CREATED, (newCommit) => {
-      setCommits((prevCommits) => [newCommit, ...prevCommits]);
-    });
-
-    return () => {
-      socket.off(SocketEvent.COMMIT_CREATED);
-    };
-  }, [socket, currentUser.username]);
-
   // Format date for display
   const formatDate = (isoString) => {
     const date = new Date(isoString);
@@ -126,8 +155,8 @@ function VersionControlView() {
     }
   };
 
-  // Create a new commit
-  const createCommit = () => {
+  // Create a new commit and save to database
+  const createCommit = async () => {
     if (changedFiles.length === 0) {
       toast.error("No changes to commit");
       return;
@@ -140,8 +169,7 @@ function VersionControlView() {
 
     setLoading(true);
 
-    // Simulate commit creation
-    setTimeout(() => {
+    try {
       const newCommit = {
         id: `c${Date.now().toString(16)}`,
         message: commitMessage,
@@ -149,6 +177,23 @@ function VersionControlView() {
         timestamp: new Date().toISOString(),
         files: changedFiles.length
       };
+
+      // Save commit to database
+      const { data, error } = await supabase.from('version_control_commits').insert({
+        id: newCommit.id,
+        room_id: currentUser.roomId,
+        message: newCommit.message,
+        author: newCommit.author,
+        files_count: newCommit.files,
+        branch: branches.find(b => b.current)?.name || 'main'
+      });
+
+      if (error) {
+        console.error('Error saving commit:', error);
+        toast.error('Failed to save commit to database');
+        setLoading(false);
+        return;
+      }
 
       // Add commit to local state
       setCommits((prevCommits) => [newCommit, ...prevCommits]);
@@ -159,14 +204,18 @@ function VersionControlView() {
       // Reset state
       setCommitMessage("");
       setChangedFiles([]);
-      setLoading(false);
       
       toast.success("Commit created successfully");
-    }, 1000);
+    } catch (error) {
+      console.error('Error in createCommit:', error);
+      toast.error('Failed to create commit');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Create a new branch
-  const createBranch = () => {
+  // Create a new branch and save to database
+  const createBranch = async () => {
     const branchName = prompt("Enter new branch name:");
     if (!branchName) return;
     
@@ -175,31 +224,81 @@ function VersionControlView() {
       return;
     }
 
-    // Add new branch
-    setBranches(prevBranches => 
-      prevBranches.map(branch => ({ ...branch, current: false }))
-        .concat([{ name: branchName, current: true }])
-    );
+    try {
+      // Update all current branches to not current in database
+      await supabase
+        .from('version_control_branches')
+        .update({ is_current: false })
+        .eq('room_id', currentUser.roomId);
 
-    // Emit branch created event
-    socket.emit(SocketEvent.BRANCH_CREATED, { name: branchName });
-    
-    toast.success(`Created and switched to branch "${branchName}"`);
+      // Insert new branch as current
+      const { error } = await supabase.from('version_control_branches').insert({
+        room_id: currentUser.roomId,
+        name: branchName,
+        is_current: true,
+        created_by: currentUser.username
+      });
+
+      if (error) {
+        console.error('Error creating branch:', error);
+        toast.error('Failed to create branch in database');
+        return;
+      }
+
+      // Add new branch to local state
+      setBranches(prevBranches => 
+        prevBranches.map(branch => ({ ...branch, current: false }))
+          .concat([{ name: branchName, current: true }])
+      );
+
+      // Emit branch created event
+      socket.emit(SocketEvent.BRANCH_CREATED, { name: branchName });
+      
+      toast.success(`Created and switched to branch "${branchName}"`);
+    } catch (error) {
+      console.error('Error in createBranch:', error);
+      toast.error('Failed to create branch');
+    }
   };
 
-  // Switch to a different branch
-  const switchBranch = (branchName) => {
-    setBranches(prevBranches => 
-      prevBranches.map(branch => ({
-        ...branch,
-        current: branch.name === branchName
-      }))
-    );
+  // Switch to a different branch and update in database
+  const switchBranch = async (branchName) => {
+    try {
+      // Update all branches to not current
+      await supabase
+        .from('version_control_branches')
+        .update({ is_current: false })
+        .eq('room_id', currentUser.roomId);
 
-    // Emit branch switched event
-    socket.emit(SocketEvent.BRANCH_SWITCHED, { name: branchName });
-    
-    toast.success(`Switched to branch "${branchName}"`);
+      // Update selected branch to current
+      const { error } = await supabase
+        .from('version_control_branches')
+        .update({ is_current: true })
+        .eq('room_id', currentUser.roomId)
+        .eq('name', branchName);
+
+      if (error) {
+        console.error('Error switching branch:', error);
+        toast.error('Failed to switch branch in database');
+        return;
+      }
+
+      // Update local state
+      setBranches(prevBranches => 
+        prevBranches.map(branch => ({
+          ...branch,
+          current: branch.name === branchName
+        }))
+      );
+
+      // Emit branch switched event
+      socket.emit(SocketEvent.BRANCH_SWITCHED, { name: branchName });
+      
+      toast.success(`Switched to branch "${branchName}"`);
+    } catch (error) {
+      console.error('Error in switchBranch:', error);
+      toast.error('Failed to switch branch');
+    }
   };
   
   // Pull code from remote (simulated)
@@ -254,8 +353,8 @@ function VersionControlView() {
     }, 2000);
   };
   
-  // Merge branches (simulated)
-  const mergeBranches = () => {
+  // Merge branches (simulated with database update)
+  const mergeBranches = async () => {
     // Get current branch
     const currentBranch = branches.find(branch => branch.current);
     if (!currentBranch) {
@@ -287,7 +386,7 @@ function VersionControlView() {
     setSelectedBranchForMerge(branchToMerge);
     
     // Simulate merge process
-    setTimeout(() => {
+    setTimeout(async () => {
       // Simulate potential conflicts
       const hasConflicts = Math.random() > 0.7;
       
@@ -330,26 +429,47 @@ function incomingFeature() {
         // Successful merge
         toast.success(`Successfully merged ${branchToMerge} into ${currentBranch.name}`);
         
-        // Create a merge commit
-        const mergeCommit = {
-          id: `merge_${Date.now().toString(16)}`,
-          message: `Merge branch '${branchToMerge}' into ${currentBranch.name}`,
-          author: currentUser.username,
-          timestamp: new Date().toISOString(),
-          files: Math.floor(Math.random() * 5) + 1
-        };
-        
-        // Add commit to local state
-        setCommits((prevCommits) => [mergeCommit, ...prevCommits]);
-        
-        // Notify other users
-        socket.emit(SocketEvent.COMMIT_CREATED, mergeCommit);
-        socket.emit(SocketEvent.MERGE_BRANCHES, {
-          from: branchToMerge,
-          to: currentBranch.name,
-          by: currentUser.username,
-          successful: true
-        });
+        try {
+          // Create a merge commit
+          const mergeCommit = {
+            id: `merge_${Date.now().toString(16)}`,
+            message: `Merge branch '${branchToMerge}' into ${currentBranch.name}`,
+            author: currentUser.username,
+            timestamp: new Date().toISOString(),
+            files: Math.floor(Math.random() * 5) + 1
+          };
+          
+          // Save merge commit to database
+          const { error } = await supabase.from('version_control_commits').insert({
+            id: mergeCommit.id,
+            room_id: currentUser.roomId,
+            message: mergeCommit.message,
+            author: mergeCommit.author,
+            files_count: mergeCommit.files,
+            branch: currentBranch.name,
+            merge_source: branchToMerge
+          });
+          
+          if (error) {
+            console.error('Error saving merge commit:', error);
+            toast.error('Failed to save merge commit to database');
+          } else {
+            // Add commit to local state
+            setCommits((prevCommits) => [mergeCommit, ...prevCommits]);
+            
+            // Notify other users
+            socket.emit(SocketEvent.COMMIT_CREATED, mergeCommit);
+            socket.emit(SocketEvent.MERGE_BRANCHES, {
+              from: branchToMerge,
+              to: currentBranch.name,
+              by: currentUser.username,
+              successful: true
+            });
+          }
+        } catch (error) {
+          console.error('Error in mergeBranches:', error);
+          toast.error('Failed to create merge commit');
+        }
       }
       
       setMergeInProgress(false);

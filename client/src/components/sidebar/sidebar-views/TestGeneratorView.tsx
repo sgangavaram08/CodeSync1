@@ -1,5 +1,4 @@
 
-import { useCopilot } from "@/context/CopilotContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
 import useResponsive from "@/hooks/useResponsive"
@@ -10,12 +9,12 @@ import { LuCheck, LuCopy, LuFolderPlus } from "react-icons/lu"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
+import axiosInstance from "@/api/pollinationsApi"
 
 function TestGeneratorView() {
     const { viewHeight } = useResponsive()
     const { socket } = useSocket()
     const { activeFile, fileStructure, updateFileContent, setActiveFile, createDirectory, createFile } = useFileSystem()
-    const { isRunning } = useCopilot()
     const [testOutput, setTestOutput] = useState("")
     const [testFramework, setTestFramework] = useState("jest")
     const [isGenerating, setIsGenerating] = useState(false)
@@ -67,36 +66,24 @@ function TestGeneratorView() {
             console.log("Generating tests with framework:", testFramework);
             console.log("Active file:", activeFile.name);
             
-            // Use fetch API directly for reliability
-            const response = await fetch("https://api.pollinations.ai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a test case generator for ${testFramework}. Generate comprehensive test cases for the provided code. Only return the code, formatted correctly.`,
-                        },
-                        {
-                            role: "user",
-                            content: prompt,
-                        },
-                    ],
-                    model: "mistral",
-                }),
-            })
+            // Use the existing API client with proper error handling
+            const response = await axiosInstance.post("/", {
+                messages: [
+                    {
+                        role: "system",
+                        content: `You are a test case generator for ${testFramework}. Generate comprehensive test cases for the provided code. Only return the code, formatted correctly.`,
+                    },
+                    {
+                        role: "user",
+                        content: prompt,
+                    },
+                ],
+                model: "mistral",
+                private: true,
+            });
 
-            if (!response.ok) {
-                throw new Error(`API responded with status: ${response.status}`);
-            }
-
-            const data = await response.json()
-            console.log("Test generation response:", data);
-            
-            if (data && data.choices && data.choices[0] && data.choices[0].message) {
-                const testCode = data.choices[0].message.content || "// No tests generated"
+            if (response.data) {
+                const testCode = response.data;
                 setTestOutput(`\`\`\`${testFramework === "jest" ? "javascript" : testFramework}\n${testCode}\n\`\`\``)
                 toast.success("Test cases generated successfully")
                 
@@ -113,7 +100,7 @@ function TestGeneratorView() {
             }
         } catch (error) {
             console.error("Error generating test cases:", error)
-            toast.error(`Failed to generate test cases: ${error.message}`)
+            toast.error(`Failed to generate test cases: ${error.message || "Unknown error"}`)
             setTestOutput("```\n// Failed to generate test cases\n```")
         } finally {
             setIsGenerating(false)

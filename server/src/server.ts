@@ -1,4 +1,3 @@
-
 import express, { Response, Request } from "express";
 import dotenv from "dotenv";
 import http from "http";
@@ -11,6 +10,7 @@ import bcrypt from "bcryptjs";
 import User, { IUser } from "./models/User";
 import { connectDB } from "./config/db";
 import Room, { RoomData } from "./models/Room";
+import VersionControl, { BranchData, CommitData } from "./models/VersionControl";
 
 dotenv.config();
 
@@ -498,13 +498,35 @@ io.on("connection", (socket) => {
   });
   
   socket.on(SocketEvent.BRANCH_CREATED, ({ name }) => {
-    const roomId = getRoomId(socket.id);
-    if (!roomId) return;
     const user = getUserBySocketId(socket.id);
     if (!user) return;
     
+    const roomId = user.roomId;
+    
+    try {
+      // Set all branches to not current
+      const existingBranches = await VersionControl.findBranches(roomId);
+      for (const branch of existingBranches) {
+        if (branch.id && branch.is_current) {
+          await VersionControl.updateBranch(branch.id, { is_current: false });
+        }
+      }
+      
+      // Create new branch
+      const branchData: BranchData = {
+        room_id: roomId,
+        name,
+        is_current: true,
+        created_by: user.username
+      };
+      
+      VersionControl.createBranch(branchData);
+    } catch (error) {
+      console.error('Error in BRANCH_CREATED socket handler:', error);
+    }
+    
     // Broadcast to all users in the room
-    io.to(roomId).emit(SocketEvent.BRANCH_CREATED, {
+    socket.broadcast.to(roomId).emit(SocketEvent.BRANCH_CREATED, {
       name,
       by: user.username
     });

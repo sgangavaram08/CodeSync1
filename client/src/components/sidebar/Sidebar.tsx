@@ -70,10 +70,10 @@ function Sidebar() {
                     viewName={VIEWS.RUN}
                     icon={viewIcons[VIEWS.RUN] as JSX.Element || <span />}
                 />
-                <SidebarButton
+                {/* <SidebarButton
                     viewName={VIEWS.VERSION_CONTROL}
                     icon={viewIcons[VIEWS.VERSION_CONTROL] as JSX.Element || <span />}
-                />
+                /> */}
                 <SidebarButton
                     viewName={VIEWS.CLIENTS}
                     icon={viewIcons[VIEWS.CLIENTS] as JSX.Element || <span />}

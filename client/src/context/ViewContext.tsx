@@ -6,7 +6,8 @@ import RunView from "@/components/sidebar/sidebar-views/RunView"
 import SettingsView from "@/components/sidebar/sidebar-views/SettingsView"
 import UsersView from "@/components/sidebar/sidebar-views/UsersView"
 import VersionControlView from "@/components/sidebar/sidebar-views/VersionControlView"
-import TestGeneratorView from "@/components/sidebar/sidebar-views/TestGeneratorView"
+// Commenting out TestGeneratorView import temporarily
+// import TestGeneratorView from "@/components/sidebar/sidebar-views/TestGeneratorView"
 import useWindowDimensions from "@/hooks/useWindowDimensions"
 import { VIEWS, ViewContext as ViewContextType } from "@/types/view"
 import { ReactNode, createContext, useContext, useState } from "react"
@@ -36,7 +37,8 @@ function ViewContextProvider({ children }: { children: ReactNode }) {
         [VIEWS.CHATS]: <ChatsView />,
         [VIEWS.RUN]: <RunView />,
         [VIEWS.VERSION_CONTROL]: <VersionControlView />,
-        [VIEWS.TEST_GENERATOR]: <TestGeneratorView />
+        // Temporarily provide an empty div for TEST_GENERATOR view
+        [VIEWS.TEST_GENERATOR]: <div className="p-4">Test Generator temporarily disabled</div>
     })
     const [viewIcons] = useState({
         [VIEWS.FILES]: <LuFiles size={28} />,

@@ -1,4 +1,3 @@
-
 import { useCopilot } from "@/context/CopilotContext"
 import { useFileSystem } from "@/context/FileContext"
 import { useSocket } from "@/context/SocketContext"
@@ -67,6 +66,7 @@ function CopilotView() {
         }
     }
     
+    /* Temporarily commenting out test generator functionality */
     const goToTestGenerator = () => {
         if (!activeFile) {
             toast.error("Please open a file first to generate tests")
@@ -75,6 +75,7 @@ function CopilotView() {
         setActiveView(VIEWS.TEST_GENERATOR);
         toast.success("Switched to test generator view");
     }
+    
 
     return (
         <div
@@ -96,6 +97,7 @@ function CopilotView() {
                     {isRunning ? "Generating..." : "Generate Code"}
                 </button>
                 
+                {/* Temporarily commenting out test generator button */}
                 <button
                     className="mt-1 flex justify-center rounded-md bg-emerald-600 p-2 font-bold text-white outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={goToTestGenerator}
@@ -103,6 +105,7 @@ function CopilotView() {
                 >
                     <LuTestTube size={20} />
                 </button>
+                
             </div>
             {output && (
                 <div className="flex justify-end gap-4 pt-2">

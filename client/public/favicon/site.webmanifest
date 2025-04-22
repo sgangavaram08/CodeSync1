@@ -1,6 +1,7 @@
+
 {
-    "name": "Code Sync",
-    "short_name": "Code Sync",
+    "name": "CogniShare",
+    "short_name": "CogniShare",
     "icons": [
         {
             "src": "android-chrome-192x192.png",
